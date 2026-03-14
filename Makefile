@@ -13,9 +13,9 @@
 .PHONY: publish publish-dry check
 
 check:
-	npm run lint
-	npm run tsgo
-	npm run test
+	pnpm lint
+	pnpm tsgo
+	pnpm test
 
 publish:
 	node ./scripts/publish.mjs $(filter-out $@,$(MAKECMDGOALS))

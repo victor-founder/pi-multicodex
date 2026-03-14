@@ -3,20 +3,11 @@
  *
  * Rotates multiple ChatGPT Codex OAuth accounts for the built-in
  * openai-codex-responses API.
- *
- * Note: The published @mariozechner/pi-coding-agent types do not expose the
- * extension surface yet. We import ExtensionAPI as a type and provide a local
- * module augmentation (pi-coding-agent.d.ts) so TypeScript can compile.
  */
 
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import {
-	loginOpenAICodex,
-	refreshOpenAICodexToken,
-	type OAuthCredentials,
-} from "@mariozechner/pi-ai/oauth";
 import {
 	type Api,
 	type AssistantMessage,
@@ -29,6 +20,11 @@ import {
 	type Model,
 	type SimpleStreamOptions,
 } from "@mariozechner/pi-ai";
+import {
+	loginOpenAICodex,
+	type OAuthCredentials,
+	refreshOpenAICodexToken,
+} from "@mariozechner/pi-ai/oauth";
 import type {
 	ExtensionAPI,
 	ExtensionCommandContext,

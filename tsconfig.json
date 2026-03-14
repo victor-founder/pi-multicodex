@@ -8,10 +8,5 @@
 		"strict": true,
 		"skipLibCheck": true
 	},
-	"include": [
-		"index.ts",
-		"pi-coding-agent.d.ts",
-		"index.test.ts",
-		"vitest.config.ts"
-	]
+	"include": ["index.ts", "index.test.ts", "vitest.config.ts"]
 }

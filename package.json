@@ -1,9 +1,10 @@
 {
-	"name": "pi-multicodex",
+	"name": "@victor/pi-multicodex",
 	"version": "1.0.2",
-	"description": "Rotate multiple ChatGPT Codex OAuth accounts for pi",
+	"description": "Codex account rotation extension for pi",
 	"license": "MIT",
 	"type": "module",
+	"packageManager": "pnpm@10.32.1",
 	"keywords": [
 		"pi-package",
 		"pi",
@@ -17,17 +18,17 @@
 		"extensions": [
 			"./index.ts"
 		],
-		"image": "https://raw.githubusercontent.com/kim0/pi-multicodex/main/assets/multicodex.png"
+		"image": "https://raw.githubusercontent.com/victor-founder/pi-multicodex/main/assets/multicodex.png"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/kim0/pi-multicodex.git"
+		"url": "git+https://github.com/victor-founder/pi-multicodex.git"
 	},
-	"homepage": "https://github.com/kim0/pi-multicodex#readme",
+	"homepage": "https://github.com/victor-founder/pi-multicodex#readme",
 	"bugs": {
-		"url": "https://github.com/kim0/pi-multicodex/issues"
+		"url": "https://github.com/victor-founder/pi-multicodex/issues"
 	},
-	"author": "kim0",
+	"author": "Victor",
 	"files": [
 		"index.ts",
 		"README.md",
@@ -40,16 +41,16 @@
 		"tsgo": "tsgo -p tsconfig.json"
 	},
 	"peerDependencies": {
-		"@mariozechner/pi-coding-agent": "*",
-		"@mariozechner/pi-ai": "*"
+		"@mariozechner/pi-ai": "*",
+		"@mariozechner/pi-coding-agent": "*"
 	},
 	"devDependencies": {
-		"@mariozechner/pi-ai": "^0.56.2",
-		"@mariozechner/pi-coding-agent": "^0.56.2",
-		"@biomejs/biome": "^2.3.14",
-		"@types/node": "^22.0.0",
-		"@typescript/native-preview": "7.0.0-dev.20260203.1",
+		"@biomejs/biome": "^2.4.7",
+		"@mariozechner/pi-ai": "^0.58.1",
+		"@mariozechner/pi-coding-agent": "^0.58.1",
+		"@types/node": "^25.5.0",
+		"@typescript/native-preview": "7.0.0-dev.20260314.1",
 		"typescript": "^5.9.3",
-		"vitest": "^4.0.18"
+		"vitest": "^4.1.0"
 	}
 }

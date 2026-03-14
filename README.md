@@ -1,70 +1,70 @@
-# MultiCodex Extension
+# @victor/pi-multicodex
 
 ![MultiCodex](./assets/multicodex.png)
 
-MultiCodex is a **pi** extension that lets you use **multiple ChatGPT Codex OAuth accounts** with the built-in **`openai-codex-responses`** API.
+`@victor/pi-multicodex` is a pi extension for rotating multiple ChatGPT Codex OAuth accounts when using the `openai-codex-responses` API.
 
-It helps you **maximize usable Codex quota** across accounts:
+Current behavior:
 
-- **Automatic rotation on quota/rate-limit errors** (e.g. 429, usage limit).
-- **Prefers untouched accounts** (0% used in both windows) so fresh quota windows don’t sit unused.
-- Otherwise, **prefers the account whose weekly window resets soonest**.
+- rotates on quota and rate-limit failures
+- prefers untouched accounts when usage data is available
+- otherwise prefers the account whose weekly window resets first
+- stays focused on Codex only
 
-## Install (recommended)
+## Install
 
 ```bash
-pi install npm:pi-multicodex
+pi install npm:@victor/pi-multicodex
 ```
 
-After installing, restart `pi`.
+Restart `pi` after installation.
 
-## Install (local dev)
+## Local development
 
-From this directory:
+This repo uses `pnpm` for local development.
+
+```bash
+pnpm install
+pnpm lint
+pnpm tsgo
+pnpm test
+```
+
+Run the extension directly during local development:
 
 ```bash
 pi -e ./index.ts
 ```
 
-## Quick start
-
-1. Add at least one account:
-
-   ```
-   /multicodex-login your@email.com
-   ```
-
-2. Use Codex normally. When a quota window is hit, MultiCodex will rotate to another available account automatically.
-
 ## Commands
 
 - `/multicodex-login <email>`
-  - Adds/updates an account in the rotation pool.
+  - Add or update a Codex account in the rotation pool.
 - `/multicodex-use`
-  - Manually pick an account for the current session (until rotation clears it).
+  - Select an account manually for the current session.
 - `/multicodex-status`
-  - Shows accounts + cached usage info + which one is currently active.
+  - Show account state and cached usage information.
 
-## How account selection works (high level)
+## Status
 
-When pi starts / when a new session starts, the extension:
+This package is being turned into an independent fork with deliberate breaking changes.
 
-1. Loads your saved accounts.
-2. Fetches usage info for each account (cached for a few minutes).
-3. Picks an account using these heuristics:
-   - Prefer accounts that are **untouched** (0% used in both windows).
-   - Otherwise prefer the account whose **weekly** quota window **resets soonest** (5h window is ignored for selection).
-   - Otherwise pick a random available account.
+Current direction:
 
-When streaming and a quota/rate-limit error happens **before any tokens are generated**, it:
+- package name: `@victor/pi-multicodex`
+- hard break from previous storage compatibility
+- Codex-only scope
+- independent implementation roadmap tracked in `fork-plan.md`
 
-- Marks the account as exhausted until its reset (or a fallback cooldown)
-- Rotates to another account and retries
+## Release validation
 
-## Checks
+Local development uses pnpm, but published package output must remain npm-compatible.
+
+Minimum release checks:
 
 ```bash
-npm run lint
-npm run tsgo
-npm run test
+pnpm lint
+pnpm tsgo
+pnpm test
+npm pack --dry-run
 ```

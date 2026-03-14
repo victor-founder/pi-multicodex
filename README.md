@@ -76,7 +76,20 @@ npm pack --dry-run
 
 Recommended release flow:
 
+1. For the first publish of a brand-new package, publish manually from a trusted local machine.
+2. After the package exists on npm, configure npm trusted publishing for `.github/workflows/publish.yml`.
+3. Publish subsequent releases by pushing a matching `v*` git tag.
+
+Bootstrap publish:
+
 ```bash
 npm run publish:dry -- <version>
-npm run publish:release -- <version>
+npm publish --access public --otp=<code>
+```
+
+Trusted publishing flow after bootstrap:
+
+```bash
+git tag v<version>
+git push origin v<version>
 ```

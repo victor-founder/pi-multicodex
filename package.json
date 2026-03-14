@@ -41,8 +41,8 @@
 		"tsgo": "tsgo -p tsconfig.json",
 		"check": "pnpm lint && pnpm tsgo && pnpm test",
 		"pack:dry": "npm pack --dry-run",
-		"publish:dry": "node ./scripts/publish.mjs --dry-run",
-		"publish:release": "node ./scripts/publish.mjs"
+		"publish:dry": "bun ./scripts/publish.ts --dry-run",
+		"publish:release": "bun ./scripts/publish.ts"
 	},
 	"peerDependencies": {
 		"@mariozechner/pi-ai": "*",

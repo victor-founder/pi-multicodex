@@ -55,7 +55,7 @@ Target release flow:
 
 Goal: give the package a stable, self-owned local data file and tighten the storage model.
 
-- [ ] Replace `~/.pi/agent/multicodex.json` with `~/.pi/agent/pi-multicodex.json`
+- [x] Replace `~/.pi/agent/multicodex.json` with `~/.pi/agent/pi-multicodex.json`
 - [ ] Keep the on-disk format as JSON unless there is a clear reason to split state and secrets
 - [ ] Review exactly which fields belong in the local state file
 - [ ] Decide whether secret material should remain in JSON state or move to a safer storage mechanism later

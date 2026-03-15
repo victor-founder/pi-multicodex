@@ -94,7 +94,7 @@ describe("formatActiveAccountStatus", () => {
 		expect(text).not.toContain("↺");
 	});
 
-	it("uses a muted palette for the brand, account, and reset countdowns", () => {
+	it("colors full usage windows by severity, adds muted separators, and lifts the account text", () => {
 		const ctx = createContext({
 			color: (token: string, text: string) => `[${token}:${text}]`,
 		});
@@ -110,14 +110,32 @@ describe("formatActiveAccountStatus", () => {
 		);
 
 		expect(text).toContain("[muted:Codex]");
-		expect(text).toContain("[muted:a@example.com]");
-		expect(text).toContain("[dim:5h:]");
-		expect(text).toContain("[muted:(↺");
-		expect(text).toContain("[success:75% left]");
-		expect(text).toContain("[error:5% left]");
+		expect(text).toContain("[text:a@example.com]");
+		expect(text).toContain("[success:5h:75% left (↺");
+		expect(text).toContain("[error:7d:5% left (↺");
+		expect(text).toContain("[muted:·]");
 	});
 
-	it("uses muted loading text and dim unknown percentages", () => {
+	it("uses thinkingMedium for neutral used windows", () => {
+		const ctx = createContext({
+			color: (token: string, text: string) => `[${token}:${text}]`,
+		});
+		const text = formatActiveAccountStatus(
+			ctx,
+			"a@example.com",
+			{
+				primary: { usedPercent: 52, resetAt: Date.now() + 60_000 },
+				secondary: { usedPercent: 96, resetAt: Date.now() + 120_000 },
+				fetchedAt: 0,
+			},
+			{ ...defaultPreferences, usageMode: "used" },
+		);
+
+		expect(text).toContain("[thinkingMedium:5h:52% used (↺");
+		expect(text).toContain("[error:7d:96% used (↺");
+	});
+
+	it("uses muted loading text and dim unknown usage windows", () => {
 		const ctx = createContext({
 			color: (token: string, text: string) => `[${token}:${text}]`,
 		});
@@ -140,7 +158,8 @@ describe("formatActiveAccountStatus", () => {
 
 		expect(loading).toContain("[muted:Codex]");
 		expect(loading).toContain("[muted:loading...]");
-		expect(unknown).toContain("[dim:--]");
+		expect(unknown).toContain("[dim:5h:-- (↺");
+		expect(unknown).toContain("[dim:7d:-- (↺");
 	});
 });
 

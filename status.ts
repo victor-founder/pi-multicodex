@@ -24,6 +24,7 @@ const REFRESH_INTERVAL_MS = 60_000;
 const MODEL_SELECT_REFRESH_DEBOUNCE_MS = 250;
 const UNKNOWN_PERCENT = "--";
 const BRAND_LABEL = "Codex";
+const SEGMENT_SEPARATOR = "·";
 const FIVE_HOUR_LABEL = "5h:";
 const SEVEN_DAY_LABEL = "7d:";
 
@@ -148,25 +149,40 @@ function formatLoading(ctx: ExtensionContext): string {
 	return ctx.ui.theme.fg("muted", "loading...");
 }
 
+function formatSeparator(ctx: ExtensionContext): string {
+	return ctx.ui.theme.fg("muted", SEGMENT_SEPARATOR);
+}
+
+function getUsageSeverityToken(
+	displayPercent: number | undefined,
+	mode: PercentDisplayMode,
+): "success" | "thinkingMedium" | "warning" | "error" | "dim" {
+	if (typeof displayPercent !== "number" || Number.isNaN(displayPercent)) {
+		return "dim";
+	}
+
+	if (mode === "left") {
+		if (displayPercent <= 10) return "error";
+		if (displayPercent <= 25) return "warning";
+		if (displayPercent <= 50) return "thinkingMedium";
+		return "success";
+	}
+
+	if (displayPercent >= 90) return "error";
+	if (displayPercent >= 75) return "warning";
+	if (displayPercent >= 50) return "thinkingMedium";
+	return "success";
+}
+
 function formatPercent(
-	ctx: ExtensionContext,
 	displayPercent: number | undefined,
 	mode: PercentDisplayMode,
 ): string {
 	if (typeof displayPercent !== "number" || Number.isNaN(displayPercent)) {
-		return ctx.ui.theme.fg("dim", UNKNOWN_PERCENT);
+		return UNKNOWN_PERCENT;
 	}
 
-	const text = `${Math.round(clampPercent(displayPercent))}% ${mode}`;
-	if (mode === "left") {
-		if (displayPercent <= 10) return ctx.ui.theme.fg("error", text);
-		if (displayPercent <= 25) return ctx.ui.theme.fg("warning", text);
-		return ctx.ui.theme.fg("success", text);
-	}
-
-	if (displayPercent >= 90) return ctx.ui.theme.fg("error", text);
-	if (displayPercent >= 75) return ctx.ui.theme.fg("warning", text);
-	return ctx.ui.theme.fg("success", text);
+	return `${Math.round(clampPercent(displayPercent))}% ${mode}`;
 }
 
 function formatResetCountdown(resetAt: number | undefined): string | undefined {
@@ -200,20 +216,23 @@ function formatUsageSegment(
 	showReset: boolean,
 	preferences: FooterPreferences,
 ): string {
+	const displayPercent = usedToDisplayPercent(
+		usedPercent,
+		preferences.usageMode,
+	);
 	const parts = [
-		`${ctx.ui.theme.fg("dim", label)}${formatPercent(
-			ctx,
-			usedToDisplayPercent(usedPercent, preferences.usageMode),
-			preferences.usageMode,
-		)}`,
+		`${label}${formatPercent(displayPercent, preferences.usageMode)}`,
 	];
 	if (showReset) {
 		const countdown = formatResetCountdown(resetAt);
 		if (countdown) {
-			parts.push(ctx.ui.theme.fg("muted", `(↺${countdown})`));
+			parts.push(`(↺${countdown})`);
 		}
 	}
-	return parts.join(" ");
+	return ctx.ui.theme.fg(
+		getUsageSeverityToken(displayPercent, preferences.usageMode),
+		parts.join(" "),
+	);
 }
 
 export function isManagedModel(model: MaybeModel): boolean {
@@ -227,7 +246,7 @@ export function formatActiveAccountStatus(
 	preferences: FooterPreferences,
 ): string {
 	const accountText = preferences.showAccount
-		? ctx.ui.theme.fg("muted", accountEmail)
+		? ctx.ui.theme.fg("text", accountEmail)
 		: undefined;
 	if (!usage) {
 		return [formatBrand(ctx), accountText, formatLoading(ctx)]
@@ -252,16 +271,18 @@ export function formatActiveAccountStatus(
 		preferences,
 	);
 
+	const usageSegments = [fiveHour, sevenDay].filter(Boolean);
+	const usageText = usageSegments.join(` ${formatSeparator(ctx)} `);
 	const leading =
 		preferences.order === "account-first"
-			? [formatBrand(ctx), accountText]
-			: [formatBrand(ctx)];
+			? [formatBrand(ctx), accountText, usageText]
+			: [formatBrand(ctx), usageText];
 	const trailing =
 		preferences.order === "account-first" ? [] : [accountText].filter(Boolean);
 
-	return [...leading, fiveHour, sevenDay, ...trailing]
+	return [...leading, ...trailing]
 		.filter(Boolean)
-		.join(" ");
+		.join(` ${formatSeparator(ctx)} `);
 }
 
 function getBooleanLabel(value: boolean): string {

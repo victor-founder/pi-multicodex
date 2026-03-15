@@ -18,13 +18,23 @@ The current codebase is organized around these responsibilities:
 - `auth.ts`
   - reads pi's `~/.pi/agent/auth.json` and extracts importable `openai-codex` OAuth state
 - `status.ts`
-  - footer rendering, footer settings persistence, footer settings panel, and footer refresh behavior
+  - footer rendering with severity-based color tiers, footer settings persistence, settings panel with live preview, and footer refresh behavior
 - `commands.ts`
-  - `/multicodex` command-family routing, autocomplete, and account-selection flows
+  - `/multicodex` command-family routing, dynamic autocomplete, account selection/removal flows
 - `hooks.ts`
   - session-start and session-switch refresh behavior
 - `storage.ts`
   - persisted account state in `~/.pi/agent/codex-accounts.json`
+- `selection.ts`
+  - account selection logic (untouched preference, earliest weekly reset, random fallback)
+- `usage.ts` / `usage-client.ts`
+  - usage data parsing and Codex API fetching
+- `quota.ts`
+  - quota/rate-limit error classification
+- `browser.ts`
+  - login URL opening in browser
+- `abort-utils.ts`
+  - linked abort controller for stream cancellation
 
 ## Current product behavior
 

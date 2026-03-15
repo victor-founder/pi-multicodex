@@ -22,9 +22,12 @@ The current shipped behavior is:
 - MultiCodex uses one `/multicodex` command family with subcommands.
 - `/multicodex use` opens the account picker, supports account removal via `Backspace`, and supports `/multicodex use <identifier>` for direct activation.
 - `/multicodex show`, `/multicodex verify`, `/multicodex path`, `/multicodex reset`, and `/multicodex help` are available without opening a panel.
+- `/multicodex footer` opens an interactive settings panel with live preview, or prints a summary in non-interactive mode.
+- The usage footer displays severity-based color tiers that shift as quota depletes.
 - Footer settings are stored in `~/.pi/agent/settings.json` under `pi-multicodex`.
 - Managed account storage is stored in `~/.pi/agent/codex-accounts.json`.
-- Rotation criteria are still hard-coded.
+- The behavior contract (selection priority, retry policy, manual override, error classification) is documented in README.
+- Rotation criteria are still hard-coded but fully documented.
 
 ## Operating principles
 
@@ -126,12 +129,12 @@ Goal: make account inspection and switching consistent, direct, and easy to unde
 
 ### Work items
 
-- [ ] Make account selection explicit and actionable from the main UI
-- [ ] Ensure selecting an account actually activates it instead of only displaying it
-- [ ] Keep read-only summaries and mutating actions clearly separated
-- [ ] Show active account, manual override state, cooldown state, import source, and cached usage in a consistent format
+- [x] Make account selection explicit and actionable from the main UI
+- [x] Ensure selecting an account actually activates it instead of only displaying it
+- [x] Keep read-only summaries and mutating actions clearly separated
+- [x] Show active account, manual override state, cooldown state, import source, and cached usage in a consistent format
 - [ ] Improve select-or-login flow for unknown or stale identifiers
-- [ ] Replace brittle string parsing in selection flows with structured item mapping
+- [x] Replace brittle string parsing in selection flows with structured item mapping
 - [ ] Replace imported-account fallback labels with real email identity when it can be derived safely
 - [ ] Make active-account information easier to understand during a session
 
@@ -170,7 +173,7 @@ Goal: finish the footer experience so it matches the new command model and follo
 - [x] Move footer settings access under `/multicodex footer`
 - [ ] Persist footer settings immediately on each change instead of waiting until panel close
 - [ ] Re-read normalized settings after save when needed so the UI reflects persisted truth
-- [ ] Add a non-UI footer summary path under `/multicodex show` or `/multicodex help` where useful
+- [x] Add a non-UI footer summary path under `/multicodex footer` for non-interactive mode
 - [ ] Keep live preview behavior while switching to immediate persistence
 
 ### Footer acceptance criteria
@@ -185,15 +188,15 @@ Goal: make account rotation behavior explicit, configurable, and inspectable.
 
 ### Behavior contract work
 
-- [ ] Define account selection priority
-- [ ] Define quota exhaustion semantics
-- [ ] Define which reset windows matter for selection
-- [ ] Define retry policy
-- [ ] Define manual override behavior
-- [ ] Define when manual override clears
-- [ ] Define cache TTL and refresh rules
-- [ ] Define error classification rules
-- [ ] Document the behavior contract in README or a dedicated doc
+- [x] Define account selection priority
+- [x] Define quota exhaustion semantics
+- [x] Define which reset windows matter for selection
+- [x] Define retry policy
+- [x] Define manual override behavior
+- [x] Define when manual override clears
+- [x] Define cache TTL and refresh rules
+- [x] Define error classification rules
+- [x] Document the behavior contract in README
 
 ### Rotation configuration work
 
@@ -252,22 +255,22 @@ Goal: move from scattered command logic to one shared controller that owns confi
 - hooks do not duplicate command logic
 - config load and save paths are normalized and centralized
 
-## Runtime verification and recovery milestone
+## Completed milestone — runtime verification and recovery
 
-Goal: make extension health easy to inspect and recover without reading source code.
+Outcome: extension health is inspectable and recoverable from the command family.
 
 ### Work items
 
-- [ ] Add `/multicodex verify`
-- [ ] Verify account storage readability and writability
-- [ ] Verify settings storage readability and writability
-- [ ] Verify importable `openai-codex` auth visibility
-- [ ] Verify active-account resolution state
+- [x] Add `/multicodex verify`
+- [x] Verify account storage readability and writability
+- [x] Verify settings storage readability and writability
+- [x] Verify importable `openai-codex` auth visibility
+- [x] Verify active-account resolution state
 - [ ] Verify usage refresh behavior and report failures concisely
-- [ ] Add `/multicodex path`
-- [ ] Show managed account storage path and settings path
-- [ ] Add `/multicodex reset`
-- [ ] Define reset scopes such as manual override only, footer settings only, runtime cache only, or full extension reset
+- [x] Add `/multicodex path`
+- [x] Show managed account storage path and settings path
+- [x] Add `/multicodex reset`
+- [x] Define reset scopes: manual override, quota cooldown, or all
 
 ### Verification acceptance criteria
 
@@ -294,15 +297,16 @@ Goal: confirm runtime behavior stays correct as the command model and controller
 
 ## Suggested implementation order
 
-1. Build the `/multicodex` command family and delete the old commands.
-2. Add subcommand and account autocomplete.
-3. Make the main UI the zero-argument path.
-4. Make account selection fully actionable and remove no-op status selection.
-5. Move footer settings under the command family and switch to immediate persistence.
-6. Add `verify`, `path`, `reset`, and `help`.
-7. Introduce the broader MultiCodex controller.
-8. Add rotation settings and document the behavior contract.
-9. Review state restoration and lifecycle handling after the controller migration.
+1. ~~Build the `/multicodex` command family and delete the old commands.~~ Done.
+2. ~~Add subcommand and account autocomplete.~~ Done.
+3. ~~Make the main UI the zero-argument path.~~ Done.
+4. ~~Make account selection fully actionable and remove no-op status selection.~~ Done.
+5. ~~Move footer settings under the command family.~~ Done. Immediate persistence still pending.
+6. ~~Add `verify`, `path`, `reset`, and `help`.~~ Done.
+7. ~~Document the behavior contract in README.~~ Done.
+8. Introduce the broader MultiCodex controller.
+9. Add configurable rotation settings.
+10. Review state restoration and lifecycle handling after the controller migration.
 
 ## Release discipline
 
@@ -329,8 +333,8 @@ Before treating the new release flow as fully settled, explicitly validate the f
 - [x] Run `npm pack --dry-run`
 - [x] Configure npm trusted publishing for `.github/workflows/publish.yml`
 - [x] Verify the GitHub Actions trusted-publishing workflow completes successfully
-- [ ] Verify the new version is available on npmjs after a release-triggering commit
-- [ ] Verify install or upgrade in pi from the published package after a release-triggering commit
+- [x] Verify the new version is available on npmjs after a release-triggering commit
+- [x] Verify install or upgrade in pi from the published package after a release-triggering commit
 - [x] Verify the published tarball includes every runtime TypeScript module the extension imports
 
 ## Non-goals for now

@@ -13,59 +13,105 @@ function getErrorMessage(error: unknown): string {
 	return typeof error === "string" ? error : JSON.stringify(error);
 }
 
+async function loginAndActivateAccount(
+	pi: ExtensionAPI,
+	ctx: ExtensionCommandContext,
+	accountManager: AccountManager,
+	identifier: string,
+): Promise<boolean> {
+	try {
+		ctx.ui.notify(
+			`Starting login for ${identifier}... Check your browser.`,
+			"info",
+		);
+
+		const creds = await loginOpenAICodex({
+			onAuth: ({ url }) => {
+				void openLoginInBrowser(pi, ctx, url);
+				ctx.ui.notify(`Please open this URL to login: ${url}`, "info");
+				console.log(`[multicodex] Login URL: ${url}`);
+			},
+			onPrompt: async ({ message }) => (await ctx.ui.input(message)) || "",
+		});
+
+		accountManager.addOrUpdateAccount(identifier, creds);
+		accountManager.setManualAccount(identifier);
+		ctx.ui.notify(`Now using ${identifier}`, "info");
+		return true;
+	} catch (error) {
+		ctx.ui.notify(`Login failed: ${getErrorMessage(error)}`, "error");
+		return false;
+	}
+}
+
+async function useOrLoginAccount(
+	pi: ExtensionAPI,
+	ctx: ExtensionCommandContext,
+	accountManager: AccountManager,
+	identifier: string,
+): Promise<void> {
+	const existing = accountManager.getAccount(identifier);
+	if (existing) {
+		try {
+			await accountManager.ensureValidToken(existing);
+			accountManager.setManualAccount(identifier);
+			ctx.ui.notify(`Now using ${identifier}`, "info");
+			return;
+		} catch {
+			ctx.ui.notify(
+				`Stored auth for ${identifier} is no longer valid. Starting login again.`,
+				"warning",
+			);
+		}
+	}
+
+	await loginAndActivateAccount(pi, ctx, accountManager, identifier);
+}
+
 export function registerCommands(
 	pi: ExtensionAPI,
 	accountManager: AccountManager,
 	statusController: ReturnType<typeof createUsageStatusController>,
 ): void {
 	pi.registerCommand("multicodex-login", {
-		description: "Login to an OpenAI Codex account for the rotation pool",
+		description: "Compatibility alias for /multicodex-use <identifier>",
 		handler: async (
 			args: string,
 			ctx: ExtensionCommandContext,
 		): Promise<void> => {
-			const email = args.trim();
-			if (!email) {
+			const identifier = args.trim();
+			if (!identifier) {
 				ctx.ui.notify(
-					"Please provide an email/identifier: /multicodex-login my@email.com",
+					"Please provide an email/identifier: /multicodex-use my@email.com",
 					"error",
 				);
 				return;
 			}
 
-			try {
-				ctx.ui.notify(
-					`Starting login for ${email}... Check your browser.`,
-					"info",
-				);
-
-				const creds = await loginOpenAICodex({
-					onAuth: ({ url }) => {
-						void openLoginInBrowser(pi, ctx, url);
-						ctx.ui.notify(`Please open this URL to login: ${url}`, "info");
-						console.log(`[multicodex] Login URL: ${url}`);
-					},
-					onPrompt: async ({ message }) => (await ctx.ui.input(message)) || "",
-				});
-
-				accountManager.addOrUpdateAccount(email, creds);
-				ctx.ui.notify(`Successfully logged in as ${email}`, "info");
-			} catch (error) {
-				ctx.ui.notify(`Login failed: ${getErrorMessage(error)}`, "error");
-			}
+			await useOrLoginAccount(pi, ctx, accountManager, identifier);
+			await statusController.refreshFor(ctx);
 		},
 	});
 
 	pi.registerCommand("multicodex-use", {
-		description: "Switch active Codex account for this session",
+		description:
+			"Use an existing Codex account, or log in when the identifier is missing",
 		handler: async (
-			_args: string,
+			args: string,
 			ctx: ExtensionCommandContext,
 		): Promise<void> => {
+			const identifier = args.trim();
+			if (identifier) {
+				await useOrLoginAccount(pi, ctx, accountManager, identifier);
+				await statusController.refreshFor(ctx);
+				return;
+			}
+
+			await accountManager.syncImportedOpenAICodexAuth();
 			const accounts = accountManager.getAccounts();
 			if (accounts.length === 0) {
 				ctx.ui.notify(
-					"No accounts logged in. Use /multicodex-login first.",
+					"No managed accounts found. Use /login or /multicodex-use <identifier> first.",
 					"warning",
 				);
 				return;
@@ -82,9 +128,10 @@ export function registerCommands(
 			const selected = await ctx.ui.select("Select Account", options);
 			if (!selected) return;
 
-			const email = selected.split(" ")[0];
+			const email = selected.split(" (")[0] ?? selected;
 			accountManager.setManualAccount(email);
-			ctx.ui.notify(`Switched to ${email}`, "info");
+			ctx.ui.notify(`Now using ${email}`, "info");
+			await statusController.refreshFor(ctx);
 		},
 	});
 
@@ -94,11 +141,12 @@ export function registerCommands(
 			_args: string,
 			ctx: ExtensionCommandContext,
 		): Promise<void> => {
+			await accountManager.syncImportedOpenAICodexAuth();
 			await accountManager.refreshUsageForAllAccounts();
 			const accounts = accountManager.getAccounts();
 			if (accounts.length === 0) {
 				ctx.ui.notify(
-					"No accounts logged in. Use /multicodex-login first.",
+					"No managed accounts found. Use /login or /multicodex-use <identifier> first.",
 					"warning",
 				);
 				return;
@@ -112,10 +160,12 @@ export function registerCommands(
 					account.quotaExhaustedUntil &&
 					account.quotaExhaustedUntil > Date.now();
 				const untouched = isUsageUntouched(usage) ? "untouched" : null;
+				const imported = account.importSource ? "imported" : null;
 				const tags = [
 					isActive ? "active" : null,
 					quotaHit ? "quota" : null,
 					untouched,
+					imported,
 				]
 					.filter(Boolean)
 					.join(", ");

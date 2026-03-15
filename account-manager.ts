@@ -2,6 +2,7 @@ import {
 	type OAuthCredentials,
 	refreshOpenAICodexToken,
 } from "@mariozechner/pi-ai/oauth";
+import { loadImportedOpenAICodexAuth } from "./auth";
 import { isAccountAvailable, pickBestAccount } from "./selection";
 import {
 	type Account,
@@ -49,7 +50,14 @@ export class AccountManager {
 		this.warningHandler = handler;
 	}
 
-	addOrUpdateAccount(email: string, creds: OAuthCredentials): void {
+	addOrUpdateAccount(
+		email: string,
+		creds: OAuthCredentials,
+		options?: {
+			importSource?: "pi-openai-codex";
+			importFingerprint?: string;
+		},
+	): void {
 		const existing = this.getAccount(email);
 		const accountId =
 			typeof creds.accountId === "string" ? creds.accountId : undefined;
@@ -57,6 +65,8 @@ export class AccountManager {
 			existing.accessToken = creds.access;
 			existing.refreshToken = creds.refresh;
 			existing.expiresAt = creds.expires;
+			existing.importSource = options?.importSource;
+			existing.importFingerprint = options?.importFingerprint;
 			if (accountId) {
 				existing.accountId = accountId;
 			}
@@ -67,6 +77,8 @@ export class AccountManager {
 				refreshToken: creds.refresh,
 				expiresAt: creds.expires,
 				accountId,
+				importSource: options?.importSource,
+				importFingerprint: options?.importFingerprint,
 			});
 		}
 		this.setActiveAccount(email);
@@ -110,6 +122,38 @@ export class AccountManager {
 
 	clearManualAccount(): void {
 		this.manualEmail = undefined;
+	}
+
+	getImportedAccount(): Account | undefined {
+		return this.data.accounts.find(
+			(account) => account.importSource === "pi-openai-codex",
+		);
+	}
+
+	async syncImportedOpenAICodexAuth(): Promise<boolean> {
+		const imported = await loadImportedOpenAICodexAuth();
+		if (!imported) return false;
+
+		const existingImported = this.getImportedAccount();
+		if (
+			existingImported?.importFingerprint === imported.fingerprint &&
+			existingImported.email === imported.identifier
+		) {
+			return false;
+		}
+
+		if (existingImported && existingImported.email !== imported.identifier) {
+			const target = this.getAccount(imported.identifier);
+			if (!target) {
+				existingImported.email = imported.identifier;
+			}
+		}
+
+		this.addOrUpdateAccount(imported.identifier, imported.credentials, {
+			importSource: "pi-openai-codex",
+			importFingerprint: imported.fingerprint,
+		});
+		return true;
 	}
 
 	getAvailableManualAccount(options?: {

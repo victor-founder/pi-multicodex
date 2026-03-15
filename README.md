@@ -6,6 +6,8 @@
 
 ## What it does
 
+- overrides the normal `openai-codex` path instead of requiring a separate provider to be selected
+- auto-imports pi's stored `openai-codex` auth when it is new or changed
 - rotates accounts on quota and rate-limit failures
 - prefers untouched accounts when usage data is available
 - otherwise prefers the account whose weekly window resets first
@@ -45,12 +47,13 @@ pi -e ./index.ts
 
 ## Commands
 
-- `/multicodex-login <email>`
-  - Add or update a Codex account in the rotation pool.
-- `/multicodex-use`
-  - Select an account manually for the current session.
+- `/multicodex-use [identifier]`
+  - Use an existing managed account, or start the Codex login flow when the account is missing or the stored auth is no longer valid.
+  - With no argument, opens an account picker.
+- `/multicodex-login <identifier>`
+  - Compatibility alias for `/multicodex-use <identifier>`.
 - `/multicodex-status`
-  - Show account state and cached usage information.
+  - Show managed account state and cached usage information.
 - `/multicodex-footer`
   - Open an interactive panel to configure footer fields and ordering.
 
@@ -68,12 +71,12 @@ Current direction:
 
 Current next step:
 
-- add active-account usage visibility in pi for this extension's managed Codex accounts
+- make MultiCodex own the normal `openai-codex` path directly
+- auto-import pi's existing `openai-codex` auth when it is new or changed
 - mirror the existing codex usage footer style, including support for displaying both reset countdowns
-- show footer usage only when the selected model uses the `multicodex` provider override
 - show the active account identifier beside the 5h and 7d usage metrics
-- configure footer fields and ordering through an interactive panel
-- refresh the footer from the active managed account without polling aggressively
+- keep footer configuration in an interactive panel
+- tighten footer updates so account switches and quota rotation are reflected immediately
 
 ## Release validation
 

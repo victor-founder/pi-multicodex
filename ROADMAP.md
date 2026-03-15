@@ -25,10 +25,10 @@ The roadmap is centered on:
 ## Decisions already locked in
 
 - **Package name:** `@victor-software-house/pi-multicodex`
-- **Command prefix:** keep current commands for now
-  - `/multicodex-login`
-  - `/multicodex-use`
+- **Commands:** converge on `/multicodex-use [identifier]` as the primary account command
+  - `/multicodex-login` remains a compatibility alias
   - `/multicodex-status`
+  - `/multicodex-footer`
 - **Scope:** Codex only
 - **Local package manager:** pnpm
 - **Primary release path:** npmjs with trusted publishing
@@ -88,21 +88,23 @@ Goal: surface usage information for the currently active account directly in pi.
 Planned work:
 
 - [ ] Integrate the ideas or code path from `calesennett/pi-codex-usage`
-- [ ] Display footer usage only when the active model is authenticated through this extension's provider override
+- [ ] Override the normal `openai-codex` path instead of requiring a separate provider to be selected manually
+- [ ] Auto-import pi's stored `openai-codex` auth when it is new or changed
 - [ ] Ensure the usage shown belongs to the currently selected active account
 - [ ] Display the logged-in account identifier beside the usage metrics
 - [ ] Add an interactive configuration panel for footer fields, reset countdown selection, and ordering
 - [ ] Reuse or adapt a refresh model that stays responsive without excessive polling
-- [ ] Keep the feature scoped to this extension's managed accounts rather than global Codex auth state
 
 Implementation next steps:
 
-1. Add a status controller dedicated to footer rendering.
-2. Gate footer rendering on the active model provider being `multicodex`.
-3. Read the active account from `AccountManager` and render its email beside 5h and 7d usage.
-4. Add an interactive footer settings panel for account visibility, 5h/7d/both reset countdown selection, usage mode, and field ordering.
-5. Refresh on session start, session switch, model change, turn end, and low-frequency timer ticks.
-6. Add tests for status formatting, provider gating, cached-usage fallback, settings behavior, and extension event wiring.
+1. Override `openai-codex` with the MultiCodex-managed stream wrapper.
+2. Import pi's stored `openai-codex` auth into managed account storage when it changes.
+3. Treat `/multicodex-use [identifier]` as the primary select-or-login entrypoint.
+4. Keep `/multicodex-login` only as a compatibility alias.
+5. Render the footer for normal Codex usage and show the active managed account beside 5h and 7d usage.
+6. Add an interactive footer settings panel for account visibility, 5h/7d/both reset countdown selection, usage mode, and field ordering.
+7. Refresh on session start, session switch, model change, turn end, manual account change, and low-frequency timer ticks.
+8. Add tests for auth import, provider override behavior, status formatting, cached-usage fallback, and extension event wiring.
 
 ## Follow-up milestone — behavior contract
 

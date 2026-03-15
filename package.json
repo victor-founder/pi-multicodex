@@ -32,6 +32,7 @@
 	"files": [
 		"abort-utils.ts",
 		"account-manager.ts",
+		"auth.ts",
 		"browser.ts",
 		"commands.ts",
 		"extension.ts",

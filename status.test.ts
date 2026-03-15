@@ -25,7 +25,7 @@ function createContext(overrides?: {
 	return {
 		hasUI: true,
 		model: {
-			provider: overrides?.provider ?? "multicodex",
+			provider: overrides?.provider ?? "openai-codex",
 		},
 		ui: {
 			setStatus,
@@ -39,9 +39,9 @@ function createContext(overrides?: {
 }
 
 describe("isManagedModel", () => {
-	it("matches the multicodex provider", () => {
-		expect(isManagedModel({ provider: "multicodex" } as never)).toBe(true);
-		expect(isManagedModel({ provider: "openai-codex" } as never)).toBe(false);
+	it("matches the overridden openai-codex provider", () => {
+		expect(isManagedModel({ provider: "openai-codex" } as never)).toBe(true);
+		expect(isManagedModel({ provider: "anthropic" } as never)).toBe(false);
 		expect(isManagedModel(undefined)).toBe(false);
 	});
 });
@@ -100,7 +100,7 @@ describe("createUsageStatusController", () => {
 		const controller = createUsageStatusController({} as never);
 
 		await controller.refreshFor(
-			createContext({ provider: "openai-codex", setStatus }),
+			createContext({ provider: "anthropic", setStatus }),
 		);
 
 		expect(setStatus).toHaveBeenCalledWith("multicodex-usage", undefined);

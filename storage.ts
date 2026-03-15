@@ -10,6 +10,8 @@ export interface Account {
 	accountId?: string;
 	lastUsed?: number;
 	quotaExhaustedUntil?: number;
+	importSource?: "pi-openai-codex";
+	importFingerprint?: string;
 }
 
 export interface StorageData {

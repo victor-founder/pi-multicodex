@@ -28,7 +28,7 @@ vi.mock("./hooks", () => ({
 }));
 
 vi.mock("./provider", () => ({
-	PROVIDER_ID: "multicodex",
+	PROVIDER_ID: "openai-codex",
 	buildMulticodexProviderConfig: mocks.buildMulticodexProviderConfig,
 }));
 
@@ -70,7 +70,7 @@ describe("multicodexExtension", () => {
 
 		expect(mocks.setWarningHandler).toHaveBeenCalledOnce();
 		expect(mocks.buildMulticodexProviderConfig).toHaveBeenCalledOnce();
-		expect(registerProvider).toHaveBeenCalledWith("multicodex", {
+		expect(registerProvider).toHaveBeenCalledWith("openai-codex", {
 			mocked: true,
 		});
 		expect(mocks.registerCommands).toHaveBeenCalledOnce();

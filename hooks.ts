@@ -3,6 +3,7 @@ import type { AccountManager } from "./account-manager";
 async function refreshAndActivateBestAccount(
 	accountManager: AccountManager,
 ): Promise<void> {
+	await accountManager.syncImportedOpenAICodexAuth();
 	await accountManager.refreshUsageForAllAccounts({ force: true });
 	const manual = accountManager.getAvailableManualAccount();
 	if (manual) return;

@@ -10,7 +10,7 @@ import {
 import type { AccountManager } from "./account-manager";
 import { createStreamWrapper } from "./stream-wrapper";
 
-export const PROVIDER_ID = "multicodex";
+export const PROVIDER_ID = "openai-codex";
 
 export interface ProviderModelDef {
 	id: string;

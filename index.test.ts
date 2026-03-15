@@ -256,6 +256,7 @@ describe("manual account selection", () => {
 		let headerEmail: string | undefined;
 
 		const accountManager = {
+			syncImportedOpenAICodexAuth: async () => false,
 			getAvailableManualAccount: () => manual,
 			hasManualAccount: () => true,
 			clearManualAccount: () => {},
@@ -287,7 +288,7 @@ describe("manual account selection", () => {
 		)(
 			{
 				id: "test",
-				provider: "multicodex",
+				provider: "openai-codex",
 				api: "openai-codex-responses",
 			} as StreamModel,
 			{} as StreamContext,
@@ -307,6 +308,7 @@ describe("manual account selection", () => {
 		let headerEmail: string | undefined;
 
 		const accountManager = {
+			syncImportedOpenAICodexAuth: async () => false,
 			getAvailableManualAccount: () => undefined,
 			hasManualAccount: () => true,
 			clearManualAccount: () => {
@@ -337,7 +339,7 @@ describe("manual account selection", () => {
 		)(
 			{
 				id: "test",
-				provider: "multicodex",
+				provider: "openai-codex",
 				api: "openai-codex-responses",
 			} as StreamModel,
 			{} as StreamContext,
@@ -360,6 +362,7 @@ describe("manual account selection", () => {
 		let streamCalls = 0;
 
 		const accountManager = {
+			syncImportedOpenAICodexAuth: async () => false,
 			getAvailableManualAccount: () => (cleared ? undefined : manual),
 			hasManualAccount: () => !cleared,
 			clearManualAccount: () => {
@@ -398,7 +401,7 @@ describe("manual account selection", () => {
 		)(
 			{
 				id: "test",
-				provider: "multicodex",
+				provider: "openai-codex",
 				api: "openai-codex-responses",
 			} as StreamModel,
 			{} as StreamContext,

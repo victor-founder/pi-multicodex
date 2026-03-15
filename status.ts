@@ -335,7 +335,11 @@ export function createUsageStatusController(accountManager: AccountManager) {
 			return;
 		}
 
-		const activeAccount = accountManager.getActiveAccount();
+		let activeAccount = accountManager.getActiveAccount();
+		if (!activeAccount) {
+			await accountManager.syncImportedOpenAICodexAuth();
+			activeAccount = accountManager.getActiveAccount();
+		}
 		if (!activeAccount) {
 			ctx.ui.setStatus(
 				STATUS_KEY,

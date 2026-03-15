@@ -1,3 +1,10 @@
+## [2.0.5](https://github.com/victor-software-house/pi-multicodex/compare/v2.0.4...v2.0.5) (2026-03-15)
+
+
+### Bug Fixes
+
+* add prior art comparison with original repos ([14f0d91](https://github.com/victor-software-house/pi-multicodex/commit/14f0d91f6d9e49452969decd13cc5a773192e864))
+
 ## [2.0.4](https://github.com/victor-software-house/pi-multicodex/compare/v2.0.3...v2.0.4) (2026-03-15)
 
 

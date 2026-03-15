@@ -92,6 +92,14 @@ Release flow:
 3. Create and push a matching `v*` tag.
 4. Let GitHub Actions publish through trusted publishing.
 
+Local push protection:
+
+- `scripts/pre-push.sh` runs the same core validations as the publish workflow:
+  - `mise x -- pnpm check`
+  - `mise x -- npm pack --dry-run`
+- the local git hook at `.git/hooks/pre-push` calls that script
+- when pushing a `v*` tag, the hook also verifies that the tag version matches `package.json`
+
 Prepare locally:
 
 ```bash

@@ -38,6 +38,7 @@ Release workflow:
 - The release helper should prefer Bun package-manager commands for version updates.
 - Normal releases are tag-driven through GitHub Actions trusted publishing.
 - Do not use local `npm publish` for routine releases.
+- Keep the local `.git/hooks/pre-push` hook installed so pushes run `mise x -- pnpm check` and `mise x -- npm pack --dry-run`.
 
 ## Commit Workflow
 

@@ -8,5 +8,11 @@
 		"strict": true,
 		"skipLibCheck": true
 	},
-	"include": ["index.ts", "index.test.ts", "storage.ts", "vitest.config.ts"]
+	"include": [
+		"index.ts",
+		"index.test.ts",
+		"storage.ts",
+		"usage.ts",
+		"vitest.config.ts"
+	]
 }

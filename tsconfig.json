@@ -10,6 +10,7 @@
 	},
 	"include": [
 		"abort-utils.ts",
+		"account-manager.ts",
 		"index.ts",
 		"index.test.ts",
 		"selection.ts",

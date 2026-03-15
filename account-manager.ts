@@ -195,6 +195,25 @@ export class AccountManager {
 		}
 	}
 
+	removeAccount(email: string): boolean {
+		const index = this.data.accounts.findIndex(
+			(account) => account.email === email,
+		);
+		if (index < 0) return false;
+
+		this.data.accounts.splice(index, 1);
+		this.usageCache.delete(email);
+		if (this.manualEmail === email) {
+			this.manualEmail = undefined;
+		}
+		if (this.data.activeEmail === email) {
+			this.data.activeEmail = this.data.accounts[0]?.email;
+		}
+		this.save();
+		this.notifyStateChanged();
+		return true;
+	}
+
 	getCachedUsage(email: string): CodexUsageSnapshot | undefined {
 		return this.usageCache.get(email);
 	}

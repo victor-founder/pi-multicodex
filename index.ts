@@ -5,9 +5,6 @@
  * openai-codex-responses API.
  */
 
-import * as fs from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
 import {
 	type Api,
 	type AssistantMessage,
@@ -30,10 +27,18 @@ import type {
 	ExtensionCommandContext,
 	ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
+import {
+	type Account,
+	loadStorage,
+	type StorageData,
+	saveStorage,
+} from "./storage";
 
 // =============================================================================
 // Helpers
 // =============================================================================
+
+export type { Account } from "./storage";
 
 const USAGE_CACHE_TTL_MS = 5 * 60 * 1000;
 const USAGE_REQUEST_TIMEOUT_MS = 10 * 1000;
@@ -301,27 +306,6 @@ async function openLoginInBrowser(
 // Storage
 // =============================================================================
 
-export interface Account {
-	email: string;
-	accessToken: string;
-	refreshToken: string;
-	expiresAt: number;
-	accountId?: string;
-	lastUsed?: number;
-	quotaExhaustedUntil?: number;
-}
-
-interface StorageData {
-	accounts: Account[];
-	activeEmail?: string;
-}
-
-const STORAGE_FILE = path.join(
-	os.homedir(),
-	".pi",
-	"agent",
-	"codex-accounts.json",
-);
 const PROVIDER_ID = "multicodex";
 const QUOTA_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
 
@@ -401,30 +385,11 @@ export class AccountManager {
 	private manualEmail?: string;
 
 	constructor() {
-		this.data = this.load();
-	}
-
-	private load(): StorageData {
-		try {
-			if (fs.existsSync(STORAGE_FILE)) {
-				return JSON.parse(
-					fs.readFileSync(STORAGE_FILE, "utf-8"),
-				) as StorageData;
-			}
-		} catch (e) {
-			console.error("Failed to load multicodex accounts:", e);
-		}
-		return { accounts: [] };
+		this.data = loadStorage();
 	}
 
 	private save(): void {
-		try {
-			const dir = path.dirname(STORAGE_FILE);
-			if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-			fs.writeFileSync(STORAGE_FILE, JSON.stringify(this.data, null, 2));
-		} catch (e) {
-			console.error("Failed to save multicodex accounts:", e);
-		}
+		saveStorage(this.data);
 	}
 
 	getAccounts(): Account[] {

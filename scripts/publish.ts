@@ -38,9 +38,8 @@ async function readPackageJson(): Promise<Record<string, unknown>> {
 	return parsed;
 }
 
-async function writePackageJson(pkg: Record<string, unknown>): Promise<void> {
-	const packageJsonPath = path.join(process.cwd(), "package.json");
-	await Bun.write(`${packageJsonPath}`, `${JSON.stringify(pkg, null, "\t")}\n`);
+async function setPackageVersion(version: string): Promise<void> {
+	await $`bun pm pkg set ${`version=${version}`}`;
 }
 
 function normalizeVersionArg(arg: string | undefined): string | undefined {
@@ -87,8 +86,7 @@ async function npmVersionExists(
 }
 
 async function restorePackageVersion(version: string): Promise<void> {
-	const pkg = await readPackageJson();
-	await writePackageJson({ ...pkg, version });
+	await setPackageVersion(version);
 }
 
 async function runChecks(): Promise<void> {
@@ -128,7 +126,7 @@ async function main(): Promise<void> {
 
 	try {
 		if (shouldWriteVersion) {
-			await writePackageJson({ ...originalPkg, version: targetVersion });
+			await setPackageVersion(targetVersion);
 			console.log(`[release] wrote package.json version ${targetVersion}`);
 		}
 

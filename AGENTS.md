@@ -35,6 +35,7 @@ npm pack --dry-run
 Release workflow:
 
 - Prepare releases locally with `npm run release:prepare -- <version>`.
+- The release helper should prefer Bun package-manager commands for version updates.
 - Normal releases are tag-driven through GitHub Actions trusted publishing.
 - Do not use local `npm publish` for routine releases.
 

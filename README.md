@@ -90,6 +90,8 @@ Prepare locally:
 npm run release:prepare -- <version>
 ```
 
+The helper updates `package.json` with `bun pm pkg set` and then runs the release checks.
+
 Example:
 
 ```bash

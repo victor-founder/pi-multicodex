@@ -27,10 +27,7 @@ import type {
 	ExtensionCommandContext,
 	ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
-import {
-	createLinkedAbortController,
-	createTimeoutController,
-} from "./abort-utils";
+import { createLinkedAbortController } from "./abort-utils";
 import { isAccountAvailable, pickBestAccount } from "./selection";
 import {
 	type Account,
@@ -43,8 +40,8 @@ import {
 	formatResetAt,
 	getNextResetAt,
 	isUsageUntouched,
-	parseCodexUsageResponse,
 } from "./usage";
+import { fetchCodexUsage } from "./usage-client";
 
 // =============================================================================
 // Helpers
@@ -102,19 +99,6 @@ function createErrorAssistantMessage(
 	};
 }
 
-interface WhamUsageResponse {
-	rate_limit?: {
-		primary_window?: {
-			reset_at?: number;
-			used_percent?: number;
-		};
-		secondary_window?: {
-			reset_at?: number;
-			used_percent?: number;
-		};
-	};
-}
-
 export interface ProviderModelDef {
 	id: string;
 	name: string;
@@ -147,40 +131,6 @@ export function getOpenAICodexMirror(): {
 			maxTokens: m.maxTokens,
 		})),
 	};
-}
-
-async function fetchCodexUsage(
-	accessToken: string,
-	accountId: string | undefined,
-	options?: { signal?: AbortSignal },
-): Promise<CodexUsageSnapshot> {
-	const { controller, clear } = createTimeoutController(
-		options?.signal,
-		USAGE_REQUEST_TIMEOUT_MS,
-	);
-	try {
-		const headers: Record<string, string> = {
-			Authorization: `Bearer ${accessToken}`,
-			Accept: "application/json",
-		};
-		if (accountId) {
-			headers["ChatGPT-Account-Id"] = accountId;
-		}
-
-		const response = await fetch("https://chatgpt.com/backend-api/wham/usage", {
-			headers,
-			signal: controller.signal,
-		});
-
-		if (!response.ok) {
-			throw new Error(`Usage request failed: ${response.status}`);
-		}
-
-		const data = (await response.json()) as WhamUsageResponse;
-		return { ...parseCodexUsageResponse(data), fetchedAt: Date.now() };
-	} finally {
-		clear();
-	}
 }
 
 function withProvider(
@@ -377,6 +327,7 @@ export class AccountManager {
 			const token = await this.ensureValidToken(account);
 			const usage = await fetchCodexUsage(token, account.accountId, {
 				signal: options?.signal,
+				timeoutMs: USAGE_REQUEST_TIMEOUT_MS,
 			});
 			this.usageCache.set(account.email, usage);
 			return usage;

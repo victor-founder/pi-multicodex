@@ -12,6 +12,7 @@
 		"abort-utils.ts",
 		"account-manager.ts",
 		"browser.ts",
+		"commands.ts",
 		"index.ts",
 		"index.test.ts",
 		"selection.ts",

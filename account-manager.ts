@@ -2,6 +2,7 @@ import {
 	type OAuthCredentials,
 	refreshOpenAICodexToken,
 } from "@mariozechner/pi-ai/oauth";
+import { normalizeUnknownError } from "@victor-software-house/pi-provider-utils/streams";
 import { loadImportedOpenAICodexAuth } from "./auth";
 import { isAccountAvailable, pickBestAccount } from "./selection";
 import {
@@ -19,11 +20,6 @@ const QUOTA_COOLDOWN_MS = 60 * 60 * 1000;
 
 type WarningHandler = (message: string) => void;
 type StateChangeHandler = () => void;
-
-function getErrorMessage(error: unknown): string {
-	if (error instanceof Error) return error.message;
-	return typeof error === "string" ? error : JSON.stringify(error);
-}
 
 export class AccountManager {
 	private data: StorageData;
@@ -258,7 +254,7 @@ export class AccountManager {
 			return usage;
 		} catch (error) {
 			this.warningHandler?.(
-				`Multicodex: failed to fetch usage for ${account.email}: ${getErrorMessage(
+				`Multicodex: failed to fetch usage for ${account.email}: ${normalizeUnknownError(
 					error,
 				)}`,
 			);

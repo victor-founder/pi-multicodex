@@ -15,6 +15,7 @@ import {
 	Text,
 } from "@mariozechner/pi-tui";
 import { getAgentSettingsPath } from "@victor-software-house/pi-provider-utils/agent-paths";
+import { normalizeUnknownError } from "@victor-software-house/pi-provider-utils/streams";
 import type { AccountManager } from "./account-manager";
 import { openLoginInBrowser } from "./browser";
 import type { createUsageStatusController } from "./status";
@@ -45,11 +46,6 @@ type AccountPanelResult =
 	| { action: "select"; email: string }
 	| { action: "remove"; email: string }
 	| undefined;
-
-function getErrorMessage(error: unknown): string {
-	if (error instanceof Error) return error.message;
-	return typeof error === "string" ? error : JSON.stringify(error);
-}
 
 function toAutocompleteItems(values: readonly string[]): AutocompleteItem[] {
 	return values.map((value) => ({ value, label: value }));
@@ -202,7 +198,7 @@ async function loginAndActivateAccount(
 		ctx.ui.notify(`Now using ${identifier}`, "info");
 		return true;
 	} catch (error) {
-		ctx.ui.notify(`Login failed: ${getErrorMessage(error)}`, "error");
+		ctx.ui.notify(`Login failed: ${normalizeUnknownError(error)}`, "error");
 		return false;
 	}
 }

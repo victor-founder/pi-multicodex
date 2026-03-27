@@ -2,6 +2,7 @@ import {
 	type OAuthCredentials,
 	refreshOpenAICodexToken,
 } from "@mariozechner/pi-ai/oauth";
+import { AuthStorage } from "@mariozechner/pi-coding-agent";
 import { normalizeUnknownError } from "pi-provider-utils/streams";
 import { loadImportedOpenAICodexAuth } from "./auth";
 import { isAccountAvailable, pickBestAccount } from "./selection";
@@ -343,6 +344,12 @@ export class AccountManager {
 			return account.accessToken;
 		}
 
+		// For the imported pi account, delegate to AuthStorage so we share pi's
+		// file lock and never race with pi's own refresh path.
+		if (account.importSource === "pi-openai-codex") {
+			return this.ensureValidTokenForImportedAccount(account);
+		}
+
 		const inflight = this.refreshPromises.get(account.email);
 		if (inflight) {
 			return inflight;
@@ -369,5 +376,66 @@ export class AccountManager {
 
 		this.refreshPromises.set(account.email, promise);
 		return promise;
+	}
+
+	/**
+	 * Refresh path for the imported pi account.
+	 *
+	 * Uses AuthStorage so our refresh is serialised by the same file lock that
+	 * pi's own credential refresh uses. This prevents "refresh_token_reused"
+	 * errors caused by pi and multicodex both refreshing the same token
+	 * simultaneously.
+	 */
+	private async ensureValidTokenForImportedAccount(
+		account: Account,
+	): Promise<string> {
+		// Check if pi already refreshed since our last sync.
+		const latest = await loadImportedOpenAICodexAuth();
+		if (latest && Date.now() < latest.credentials.expires - 5 * 60 * 1000) {
+			account.accessToken = latest.credentials.access;
+			account.refreshToken = latest.credentials.refresh;
+			account.expiresAt = latest.credentials.expires;
+			account.importFingerprint = latest.fingerprint;
+			const accountId =
+				typeof latest.credentials.accountId === "string"
+					? latest.credentials.accountId
+					: undefined;
+			if (accountId) {
+				account.accountId = accountId;
+			}
+			this.save();
+			this.notifyStateChanged();
+			return account.accessToken;
+		}
+
+		// Both our copy and auth.json are expired — let AuthStorage refresh with
+		// its file lock so only one caller (us or pi) fires the API call.
+		const authStorage = AuthStorage.create();
+		const apiKey = await authStorage.getApiKey("openai-codex");
+		if (!apiKey) {
+			throw new Error(
+				"OpenAI Codex: token refresh failed — please re-authenticate with /login",
+			);
+		}
+
+		// Read the refreshed tokens back from auth.json.
+		const refreshed = await loadImportedOpenAICodexAuth();
+		if (refreshed) {
+			account.accessToken = refreshed.credentials.access;
+			account.refreshToken = refreshed.credentials.refresh;
+			account.expiresAt = refreshed.credentials.expires;
+			account.importFingerprint = refreshed.fingerprint;
+			const accountId =
+				typeof refreshed.credentials.accountId === "string"
+					? refreshed.credentials.accountId
+					: undefined;
+			if (accountId) {
+				account.accountId = accountId;
+			}
+			this.save();
+			this.notifyStateChanged();
+		}
+
+		return apiKey;
 	}
 }

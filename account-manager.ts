@@ -24,6 +24,7 @@ type StateChangeHandler = () => void;
 export class AccountManager {
 	private data: StorageData;
 	private usageCache = new Map<string, CodexUsageSnapshot>();
+	private refreshPromises = new Map<string, Promise<string>>();
 	private warningHandler?: WarningHandler;
 	private manualEmail?: string;
 	private stateChangeHandlers = new Set<StateChangeHandler>();
@@ -342,17 +343,31 @@ export class AccountManager {
 			return account.accessToken;
 		}
 
-		const result = await refreshOpenAICodexToken(account.refreshToken);
-		account.accessToken = result.access;
-		account.refreshToken = result.refresh;
-		account.expiresAt = result.expires;
-		const accountId =
-			typeof result.accountId === "string" ? result.accountId : undefined;
-		if (accountId) {
-			account.accountId = accountId;
+		const inflight = this.refreshPromises.get(account.email);
+		if (inflight) {
+			return inflight;
 		}
-		this.save();
-		this.notifyStateChanged();
-		return account.accessToken;
+
+		const promise = (async () => {
+			try {
+				const result = await refreshOpenAICodexToken(account.refreshToken);
+				account.accessToken = result.access;
+				account.refreshToken = result.refresh;
+				account.expiresAt = result.expires;
+				const accountId =
+					typeof result.accountId === "string" ? result.accountId : undefined;
+				if (accountId) {
+					account.accountId = accountId;
+				}
+				this.save();
+				this.notifyStateChanged();
+				return account.accessToken;
+			} finally {
+				this.refreshPromises.delete(account.email);
+			}
+		})();
+
+		this.refreshPromises.set(account.email, promise);
+		return promise;
 	}
 }

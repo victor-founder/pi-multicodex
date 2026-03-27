@@ -1,3 +1,11 @@
+## [2.0.8](https://github.com/victor-software-house/pi-multicodex/compare/v2.0.7...v2.0.8) (2026-03-27)
+
+
+### Bug Fixes
+
+* deduplicate concurrent token refreshes and bump pi deps to 0.63.1 ([2a4b49e](https://github.com/victor-software-house/pi-multicodex/commit/2a4b49e0a61d2f22a546fbef78421fdbbdbf1a19))
+* publish pi-provider-utils and wire up real npm dependency ([7abbfcb](https://github.com/victor-software-house/pi-multicodex/commit/7abbfcb614189f182c0109ee8347986aeee0fc2b))
+
 ## [2.0.7](https://github.com/victor-software-house/pi-multicodex/compare/v2.0.6...v2.0.7) (2026-03-16)
 
 

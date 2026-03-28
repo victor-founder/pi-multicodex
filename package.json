@@ -1,6 +1,6 @@
 {
 	"name": "@victor-software-house/pi-multicodex",
-	"version": "2.0.11",
+	"version": "2.0.12",
 	"description": "Codex account rotation extension for pi",
 	"license": "MIT",
 	"type": "module",

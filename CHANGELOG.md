@@ -1,3 +1,10 @@
+## [2.0.13](https://github.com/victor-software-house/pi-multicodex/compare/v2.0.12...v2.0.13) (2026-03-28)
+
+
+### Bug Fixes
+
+* provide real JWT as provider apiKey instead of placeholder string ([a88850d](https://github.com/victor-software-house/pi-multicodex/commit/a88850d4ae4fe43577500240927ced3ca841e390))
+
 ## [2.0.12](https://github.com/victor-software-house/pi-multicodex/compare/v2.0.11...v2.0.12) (2026-03-28)
 
 

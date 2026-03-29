@@ -1,3 +1,10 @@
+## [2.1.2](https://github.com/victor-software-house/pi-multicodex/compare/v2.1.1...v2.1.2) (2026-03-29)
+
+
+### Bug Fixes
+
+* lowercase account manager key hints ([ed52681](https://github.com/victor-software-house/pi-multicodex/commit/ed5268151433e5a4bdb3430086a9f92b56aed3f9))
+
 ## [2.1.1](https://github.com/victor-software-house/pi-multicodex/compare/v2.1.0...v2.1.1) (2026-03-29)
 
 

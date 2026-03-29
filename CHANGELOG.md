@@ -1,3 +1,10 @@
+## [2.1.1](https://github.com/victor-software-house/pi-multicodex/compare/v2.1.0...v2.1.1) (2026-03-29)
+
+
+### Bug Fixes
+
+* warn when auth failures are skipped during rotation ([d42590e](https://github.com/victor-software-house/pi-multicodex/commit/d42590ee1b60a17ab635e8f90b28d6219c096ee9))
+
 # [2.1.0](https://github.com/victor-software-house/pi-multicodex/compare/v2.0.13...v2.1.0) (2026-03-29)
 
 

@@ -98,6 +98,7 @@
 		"node": "24.14.0"
 	},
 	"dependencies": {
-		"pi-provider-utils": "^0.0.0"
+		"pi-provider-utils": "^0.0.0",
+		"zod": "^4.3.6"
 	}
 }

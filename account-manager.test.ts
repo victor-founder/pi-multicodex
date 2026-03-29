@@ -62,7 +62,7 @@ describe("AccountManager ephemeral pi auth", () => {
 		expect(mocks.saveStorage).not.toHaveBeenCalled();
 	});
 
-	it("skips ephemeral when managed account has the same refresh token", async () => {
+	it("creates ephemeral even if refresh token matches a managed account with different email", async () => {
 		mocks.storageData.accounts = [
 			{
 				email: "managed@example.com",
@@ -86,9 +86,10 @@ describe("AccountManager ephemeral pi auth", () => {
 		const manager = new AccountManager();
 		await manager.loadPiAuth();
 
-		expect(manager.getAccounts()).toHaveLength(1);
+		// Different emails = different accounts, even if same refresh token
+		expect(manager.getAccounts()).toHaveLength(2);
 		expect(manager.getAccount("managed@example.com")).toBeDefined();
-		expect(manager.getAccount("pi@example.com")).toBeUndefined();
+		expect(manager.getAccount("pi@example.com")).toBeDefined();
 	});
 
 	it("skips ephemeral when managed account has the same email", async () => {
@@ -177,7 +178,7 @@ describe("AccountManager account deduplication", () => {
 		mocks.loadImportedOpenAICodexAuth.mockResolvedValue(undefined);
 	});
 
-	it("renames duplicate account when adding with a new email and matching refresh token", () => {
+	it("creates separate accounts for different emails even with same refresh token", () => {
 		mocks.storageData.accounts = [
 			{
 				email: "old@example.com",
@@ -197,8 +198,8 @@ describe("AccountManager account deduplication", () => {
 		});
 
 		expect(account.email).toBe("new@example.com");
-		expect(manager.getAccounts()).toHaveLength(1);
-		expect(manager.getAccount("old@example.com")).toBeUndefined();
+		expect(manager.getAccounts()).toHaveLength(2);
+		expect(manager.getAccount("old@example.com")).toBeDefined();
 		expect(manager.getAccount("new@example.com")).toMatchObject({
 			accessToken: "new-access",
 			expiresAt: 300,

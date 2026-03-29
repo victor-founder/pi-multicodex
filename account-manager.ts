@@ -89,24 +89,6 @@ export class AccountManager {
 		);
 	}
 
-	private updateAccountEmail(account: Account, email: string): boolean {
-		if (account.email === email) return false;
-		const previousEmail = account.email;
-		account.email = email;
-		if (this.data.activeEmail === previousEmail) {
-			this.data.activeEmail = email;
-		}
-		if (this.manualEmail === previousEmail) {
-			this.manualEmail = email;
-		}
-		const cached = this.usageCache.get(previousEmail);
-		if (cached) {
-			this.usageCache.delete(previousEmail);
-			this.usageCache.set(email, cached);
-		}
-		return true;
-	}
-
 	private removeAccountRecord(account: Account): boolean {
 		const index = this.data.accounts.findIndex(
 			(candidate) => candidate.email === account.email,
@@ -124,16 +106,6 @@ export class AccountManager {
 			}
 		}
 		return true;
-	}
-
-	private findAccountByRefreshToken(
-		refreshToken: string,
-		excludeEmail?: string,
-	): Account | undefined {
-		return this.data.accounts.find(
-			(account) =>
-				account.refreshToken === refreshToken && account.email !== excludeEmail,
-		);
 	}
 
 	private applyCredentials(account: Account, creds: OAuthCredentials): boolean {
@@ -164,48 +136,28 @@ export class AccountManager {
 		return changed;
 	}
 
-	addOrUpdateAccount(
-		email: string,
-		creds: OAuthCredentials,
-		options?: { preserveActive?: boolean },
-	): Account {
+	addOrUpdateAccount(email: string, creds: OAuthCredentials): Account {
 		const existing = this.data.accounts.find((a) => a.email === email);
-		const duplicate = existing
-			? undefined
-			: this.findAccountByRefreshToken(creds.refresh);
-		let target = existing ?? duplicate;
-		let changed = false;
-
-		if (target) {
-			if (duplicate && duplicate.email !== email && !existing) {
-				changed = this.updateAccountEmail(duplicate, email) || changed;
+		if (existing) {
+			const changed = this.applyCredentials(existing, creds);
+			if (changed) {
+				this.save();
+				this.notifyStateChanged();
 			}
-			changed = this.applyCredentials(target, creds) || changed;
-		} else {
-			target = {
-				email,
-				accessToken: creds.access,
-				refreshToken: creds.refresh,
-				expiresAt: creds.expires,
-				accountId:
-					typeof creds.accountId === "string" ? creds.accountId : undefined,
-			};
-			this.data.accounts.push(target);
-			changed = true;
+			return existing;
 		}
 
-		if (!options?.preserveActive) {
-			if (this.data.activeEmail !== target.email) {
-				this.setActiveAccount(target.email);
-				return target;
-			}
-		}
-
-		if (changed) {
-			this.save();
-			this.notifyStateChanged();
-		}
-		return target;
+		const account: Account = {
+			email,
+			accessToken: creds.access,
+			refreshToken: creds.refresh,
+			expiresAt: creds.expires,
+			accountId:
+				typeof creds.accountId === "string" ? creds.accountId : undefined,
+		};
+		this.data.accounts.push(account);
+		this.setActiveAccount(email);
+		return account;
 	}
 
 	getActiveAccount(): Account | undefined {
@@ -264,10 +216,9 @@ export class AccountManager {
 			return;
 		}
 
-		const alreadyManaged =
-			this.data.accounts.find(
-				(a) => a.refreshToken === imported.credentials.refresh,
-			) ?? this.data.accounts.find((a) => a.email === imported.identifier);
+		const alreadyManaged = this.data.accounts.find(
+			(a) => a.email === imported.identifier,
+		);
 
 		if (alreadyManaged) {
 			this.piAuthAccount = undefined;

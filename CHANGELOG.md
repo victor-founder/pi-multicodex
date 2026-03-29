@@ -1,3 +1,10 @@
+## [2.1.4](https://github.com/victor-software-house/pi-multicodex/compare/v2.1.3...v2.1.4) (2026-03-29)
+
+
+### Bug Fixes
+
+* prefer imported auth email labels ([23ae817](https://github.com/victor-software-house/pi-multicodex/commit/23ae817b9ae403dee53b260fc66a511ca341c651))
+
 ## [2.1.3](https://github.com/victor-software-house/pi-multicodex/compare/v2.1.2...v2.1.3) (2026-03-29)
 
 

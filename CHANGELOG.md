@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/victor-software-house/pi-multicodex/compare/v2.0.13...v2.1.0) (2026-03-29)
+
+
+### Features
+
+* merge multicodex account management flows ([9c17670](https://github.com/victor-software-house/pi-multicodex/commit/9c17670028e371a4cc278227946400584f962e85))
+
 ## Unreleased
 
 ### Features

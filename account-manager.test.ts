@@ -54,6 +54,7 @@ describe("AccountManager account deduplication", () => {
 				expiresAt: 90,
 				accountId: "acc-123",
 				importSource: "pi-openai-codex",
+				importMode: "synthetic",
 				importFingerprint: "old-fingerprint",
 			},
 		];
@@ -81,6 +82,7 @@ describe("AccountManager account deduplication", () => {
 			refreshToken: "shared-refresh",
 			expiresAt: 200,
 			importSource: "pi-openai-codex",
+			importMode: "linked",
 			importFingerprint: "new-fingerprint",
 		});
 		expect(manager.getAccount("OpenAI Codex acc-123")).toBeUndefined();
@@ -96,6 +98,7 @@ describe("AccountManager account deduplication", () => {
 				expiresAt: 100,
 				accountId: "acc-123",
 				importSource: "pi-openai-codex",
+				importMode: "synthetic",
 				importFingerprint: "fingerprint",
 			},
 		];
@@ -117,8 +120,63 @@ describe("AccountManager account deduplication", () => {
 			refreshToken: "shared-refresh",
 			expiresAt: 300,
 			importSource: "pi-openai-codex",
+			importMode: "linked",
 		});
 		expect(manager.getActiveAccount()?.email).toBe("real@example.com");
+	});
+
+	it("keeps previously linked managed accounts when imported auth moves to another account", async () => {
+		mocks.storageData.accounts = [
+			{
+				email: "victor@example.com",
+				accessToken: "victor-access",
+				refreshToken: "victor-refresh",
+				expiresAt: 100,
+				accountId: "victor",
+			},
+			{
+				email: "gmail@example.com",
+				accessToken: "gmail-access",
+				refreshToken: "gmail-refresh",
+				expiresAt: 100,
+				accountId: "gmail",
+				importSource: "pi-openai-codex",
+				importMode: "linked",
+				importFingerprint: "gmail-fingerprint",
+			},
+		];
+		mocks.storageData.activeEmail = "victor@example.com";
+		mocks.loadImportedOpenAICodexAuth.mockResolvedValue({
+			identifier: "OpenAI Codex victor",
+			fingerprint: "victor-fingerprint",
+			credentials: {
+				access: "victor-new-access",
+				refresh: "victor-refresh",
+				expires: 200,
+				accountId: "victor",
+			},
+		});
+
+		const manager = new AccountManager();
+		const changed = await manager.syncImportedOpenAICodexAuth();
+
+		expect(changed).toBe(true);
+		expect(manager.getAccounts()).toHaveLength(2);
+		expect(manager.getAccount("gmail@example.com")).toMatchObject({
+			email: "gmail@example.com",
+			refreshToken: "gmail-refresh",
+			importSource: undefined,
+			importMode: undefined,
+			importFingerprint: undefined,
+		});
+		expect(manager.getAccount("victor@example.com")).toMatchObject({
+			email: "victor@example.com",
+			accessToken: "victor-new-access",
+			refreshToken: "victor-refresh",
+			importSource: "pi-openai-codex",
+			importMode: "linked",
+			importFingerprint: "victor-fingerprint",
+		});
 	});
 });
 

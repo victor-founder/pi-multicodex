@@ -153,6 +153,7 @@ export class AccountManager {
 		creds: OAuthCredentials,
 		options?: {
 			importSource?: "pi-openai-codex";
+			importMode?: "linked" | "synthetic";
 			importFingerprint?: string;
 		},
 	): boolean {
@@ -182,6 +183,10 @@ export class AccountManager {
 			account.importSource = options.importSource;
 			changed = true;
 		}
+		if (options?.importMode && account.importMode !== options.importMode) {
+			account.importMode = options.importMode;
+			changed = true;
+		}
 		if (
 			options?.importFingerprint &&
 			account.importFingerprint !== options.importFingerprint
@@ -202,6 +207,7 @@ export class AccountManager {
 		creds: OAuthCredentials,
 		options?: {
 			importSource?: "pi-openai-codex";
+			importMode?: "linked" | "synthetic";
 			importFingerprint?: string;
 			preserveActive?: boolean;
 		},
@@ -221,7 +227,13 @@ export class AccountManager {
 			) {
 				changed = this.updateAccountEmail(duplicate, email) || changed;
 			}
-			changed = this.applyCredentials(target, creds, options) || changed;
+			changed =
+				this.applyCredentials(target, creds, {
+					...options,
+					importMode:
+						options?.importMode ??
+						(duplicate?.importMode === "synthetic" ? "linked" : undefined),
+				}) || changed;
 		} else {
 			target = {
 				email,
@@ -231,6 +243,7 @@ export class AccountManager {
 				accountId:
 					typeof creds.accountId === "string" ? creds.accountId : undefined,
 				importSource: options?.importSource,
+				importMode: options?.importMode,
 				importFingerprint: options?.importFingerprint,
 			};
 			this.data.accounts.push(target);
@@ -300,6 +313,23 @@ export class AccountManager {
 		);
 	}
 
+	private clearImportedLink(account: Account): boolean {
+		let changed = false;
+		if (account.importSource) {
+			account.importSource = undefined;
+			changed = true;
+		}
+		if (account.importMode) {
+			account.importMode = undefined;
+			changed = true;
+		}
+		if (account.importFingerprint) {
+			account.importFingerprint = undefined;
+			changed = true;
+		}
+		return changed;
+	}
+
 	async syncImportedOpenAICodexAuth(): Promise<boolean> {
 		const imported = await loadImportedOpenAICodexAuth();
 		if (!imported) return false;
@@ -314,25 +344,20 @@ export class AccountManager {
 			existingImported?.email,
 		);
 		if (matchingAccount) {
-			const wasActiveImported =
-				existingImported && this.data.activeEmail === existingImported.email;
-			const wasManualImported =
-				existingImported && this.manualEmail === existingImported.email;
 			let changed = this.applyCredentials(
 				matchingAccount,
 				imported.credentials,
 				{
 					importSource: "pi-openai-codex",
+					importMode: "linked",
 					importFingerprint: imported.fingerprint,
 				},
 			);
 			if (existingImported && existingImported !== matchingAccount) {
-				changed = this.removeAccountRecord(existingImported) || changed;
-				if (wasActiveImported) {
-					this.data.activeEmail = matchingAccount.email;
-				}
-				if (wasManualImported) {
-					this.manualEmail = matchingAccount.email;
+				if (existingImported.importMode === "synthetic") {
+					changed = this.removeAccountRecord(existingImported) || changed;
+				} else {
+					changed = this.clearImportedLink(existingImported) || changed;
 				}
 			}
 			if (changed) {
@@ -342,7 +367,7 @@ export class AccountManager {
 			return changed;
 		}
 
-		if (existingImported) {
+		if (existingImported?.importMode === "synthetic") {
 			const target = this.getAccount(imported.identifier);
 			let changed = false;
 			if (!target && existingImported.email !== imported.identifier) {
@@ -354,6 +379,7 @@ export class AccountManager {
 			changed =
 				this.applyCredentials(existingImported, imported.credentials, {
 					importSource: "pi-openai-codex",
+					importMode: "synthetic",
 					importFingerprint: imported.fingerprint,
 				}) || changed;
 			if (changed) {
@@ -363,8 +389,17 @@ export class AccountManager {
 			return changed;
 		}
 
+		if (existingImported) {
+			const changed = this.clearImportedLink(existingImported);
+			if (changed) {
+				this.save();
+				this.notifyStateChanged();
+			}
+		}
+
 		this.addOrUpdateAccount(imported.identifier, imported.credentials, {
 			importSource: "pi-openai-codex",
+			importMode: "synthetic",
 			importFingerprint: imported.fingerprint,
 			preserveActive: true,
 		});

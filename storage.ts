@@ -11,6 +11,7 @@ export interface Account {
 	lastUsed?: number;
 	quotaExhaustedUntil?: number;
 	importSource?: "pi-openai-codex";
+	importMode?: "linked" | "synthetic";
 	importFingerprint?: string;
 	needsReauth?: boolean;
 }

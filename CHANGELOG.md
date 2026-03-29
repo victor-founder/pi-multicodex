@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/victor-software-house/pi-multicodex/compare/v2.2.1...v2.3.0) (2026-03-29)
+
+
+### Features
+
+* add JSON Schema for codex-accounts.json ([7f0741b](https://github.com/victor-software-house/pi-multicodex/commit/7f0741bbf301d2e3a25a9e69f4442f8a6a100ad8))
+
 ## [2.2.1](https://github.com/victor-software-house/pi-multicodex/compare/v2.2.0...v2.2.1) (2026-03-29)
 
 

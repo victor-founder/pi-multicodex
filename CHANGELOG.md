@@ -1,3 +1,10 @@
+## [2.1.5](https://github.com/victor-software-house/pi-multicodex/compare/v2.1.4...v2.1.5) (2026-03-29)
+
+
+### Bug Fixes
+
+* make imported auth sync non-destructive ([825cc1d](https://github.com/victor-software-house/pi-multicodex/commit/825cc1dbf65005066062271e58498b46d3f6a1ed))
+
 ## [2.1.4](https://github.com/victor-software-house/pi-multicodex/compare/v2.1.3...v2.1.4) (2026-03-29)
 
 

@@ -48,12 +48,14 @@
 		"usage.ts",
 		"README.md",
 		"LICENSE",
-		"assets/**"
+		"assets/**",
+		"schemas/**"
 	],
 	"scripts": {
 		"lint": "biome check .",
 		"test": "vitest run -c vitest.config.ts",
 		"tsgo": "tsgo -p tsconfig.json",
+		"generate:schema": "bun scripts/generate-schema.ts",
 		"check": "pnpm lint && pnpm tsgo && pnpm test",
 		"pack:dry": "npm pack --dry-run",
 		"release:dry": "pnpm exec semantic-release --dry-run"

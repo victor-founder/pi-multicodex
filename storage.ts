@@ -9,22 +9,62 @@ import { z } from "zod";
 
 const CURRENT_VERSION = 1;
 
-const AccountSchema = z.object({
-	email: z.string().min(1),
-	accessToken: z.string().min(1),
-	refreshToken: z.string().min(1),
-	expiresAt: z.number(),
-	accountId: z.string().optional(),
-	lastUsed: z.number().optional(),
-	quotaExhaustedUntil: z.number().optional(),
-	needsReauth: z.boolean().optional(),
-});
+const SCHEMA_URL =
+	"https://raw.githubusercontent.com/victor-software-house/pi-multicodex/main/schemas/codex-accounts.schema.json";
 
-const StorageSchema = z.object({
-	version: z.number().int().positive(),
-	accounts: z.array(AccountSchema),
-	activeEmail: z.string().optional(),
-});
+const AccountSchema = z
+	.object({
+		email: z.string().min(1).meta({ description: "Account email identifier" }),
+		accessToken: z
+			.string()
+			.min(1)
+			.meta({ description: "OAuth access token (JWT)" }),
+		refreshToken: z
+			.string()
+			.min(1)
+			.meta({ description: "OAuth refresh token" }),
+		expiresAt: z
+			.number()
+			.meta({ description: "Token expiry timestamp (ms since epoch)" }),
+		accountId: z.string().optional().meta({ description: "OpenAI account ID" }),
+		lastUsed: z
+			.number()
+			.optional()
+			.meta({ description: "Last manual selection timestamp (ms)" }),
+		quotaExhaustedUntil: z
+			.number()
+			.optional()
+			.meta({ description: "Quota cooldown expiry (ms)" }),
+		needsReauth: z
+			.boolean()
+			.optional()
+			.meta({ description: "Account needs re-authentication" }),
+	})
+	.meta({ id: "Account", description: "A managed OpenAI Codex account" });
+
+export const StorageSchema = z
+	.object({
+		$schema: z
+			.string()
+			.optional()
+			.meta({ description: "JSON Schema reference for editor support" }),
+		version: z
+			.number()
+			.int()
+			.positive()
+			.meta({ description: "Storage schema version" }),
+		accounts: z
+			.array(AccountSchema)
+			.meta({ description: "Managed account entries" }),
+		activeEmail: z
+			.string()
+			.optional()
+			.meta({ description: "Currently active account email" }),
+	})
+	.meta({
+		id: "MultiCodexStorage",
+		description: "MultiCodex managed account storage",
+	});
 
 export type Account = z.infer<typeof AccountSchema>;
 export type StorageData = z.infer<typeof StorageSchema>;
@@ -132,7 +172,12 @@ export function saveStorage(data: StorageData): void {
 		if (!fs.existsSync(dir)) {
 			fs.mkdirSync(dir, { recursive: true });
 		}
-		const output: StorageData = { ...data, version: CURRENT_VERSION };
+		const output = {
+			$schema: SCHEMA_URL,
+			version: CURRENT_VERSION,
+			accounts: data.accounts,
+			activeEmail: data.activeEmail,
+		};
 		fs.writeFileSync(STORAGE_FILE, JSON.stringify(output, null, 2));
 	} catch (error) {
 		console.error("Failed to save multicodex accounts:", error);

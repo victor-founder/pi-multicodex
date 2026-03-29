@@ -1,0 +1,77 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"$schema": {
+			"description": "JSON Schema reference for editor support",
+			"type": "string"
+		},
+		"version": {
+			"type": "integer",
+			"exclusiveMinimum": 0,
+			"maximum": 9007199254740991,
+			"description": "Storage schema version"
+		},
+		"accounts": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/Account"
+			},
+			"description": "Managed account entries"
+		},
+		"activeEmail": {
+			"description": "Currently active account email",
+			"type": "string"
+		}
+	},
+	"required": ["version", "accounts"],
+	"additionalProperties": false,
+	"id": "MultiCodexStorage",
+	"description": "MultiCodex managed account storage",
+	"$defs": {
+		"Account": {
+			"type": "object",
+			"properties": {
+				"email": {
+					"type": "string",
+					"minLength": 1,
+					"description": "Account email identifier"
+				},
+				"accessToken": {
+					"type": "string",
+					"minLength": 1,
+					"description": "OAuth access token (JWT)"
+				},
+				"refreshToken": {
+					"type": "string",
+					"minLength": 1,
+					"description": "OAuth refresh token"
+				},
+				"expiresAt": {
+					"type": "number",
+					"description": "Token expiry timestamp (ms since epoch)"
+				},
+				"accountId": {
+					"description": "OpenAI account ID",
+					"type": "string"
+				},
+				"lastUsed": {
+					"description": "Last manual selection timestamp (ms)",
+					"type": "number"
+				},
+				"quotaExhaustedUntil": {
+					"description": "Quota cooldown expiry (ms)",
+					"type": "number"
+				},
+				"needsReauth": {
+					"description": "Account needs re-authentication",
+					"type": "boolean"
+				}
+			},
+			"required": ["email", "accessToken", "refreshToken", "expiresAt"],
+			"additionalProperties": false,
+			"id": "Account",
+			"description": "A managed OpenAI Codex account"
+		}
+	}
+}

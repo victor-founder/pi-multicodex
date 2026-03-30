@@ -3,4 +3,5 @@ npm-debug.log*
 .DS_Store
 .vscode
 .firecrawl/
+.pi/
 test-e2e.ts

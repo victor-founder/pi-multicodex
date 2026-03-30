@@ -30,9 +30,31 @@ export class AccountManager {
 	private manualEmail?: string;
 	private stateChangeHandlers = new Set<StateChangeHandler>();
 	private warnedAuthFailureEmails = new Set<string>();
+	private readyPromise: Promise<void> = Promise.resolve();
+	private readyResolve?: () => void;
 
 	constructor() {
 		this.data = loadStorage();
+	}
+
+	/**
+	 * Mark the account manager as initializing. The returned promise
+	 * resolves when {@link markReady} is called. Stream requests wait
+	 * on {@link waitUntilReady} so they don't race the startup refresh.
+	 */
+	beginInitialization(): void {
+		this.readyPromise = new Promise<void>((resolve) => {
+			this.readyResolve = resolve;
+		});
+	}
+
+	markReady(): void {
+		this.readyResolve?.();
+		this.readyResolve = undefined;
+	}
+
+	waitUntilReady(): Promise<void> {
+		return this.readyPromise;
 	}
 
 	private save(): void {
@@ -255,21 +277,29 @@ export class AccountManager {
 		const account = this.getAccount(email);
 		if (account) {
 			account.quotaExhaustedUntil = until;
-			this.save();
+			if (!this.isPiAuthAccount(account)) {
+				this.save();
+			}
 			this.notifyStateChanged();
 		}
 	}
 
 	clearAllQuotaExhaustion(): number {
 		let cleared = 0;
-		for (const account of this.data.accounts) {
+		let managedChanged = false;
+		for (const account of this.getAccounts()) {
 			if (account.quotaExhaustedUntil) {
 				account.quotaExhaustedUntil = undefined;
 				cleared += 1;
+				if (!this.isPiAuthAccount(account)) {
+					managedChanged = true;
+				}
 			}
 		}
-		if (cleared > 0) {
+		if (managedChanged) {
 			this.save();
+		}
+		if (cleared > 0) {
 			this.notifyStateChanged();
 		}
 		return cleared;
@@ -377,7 +407,14 @@ export class AccountManager {
 			now,
 		});
 		if (selected) {
-			this.setActiveAccount(selected.email);
+			if (this.isPiAuthAccount(selected)) {
+				// Don't persist ephemeral pi auth email to disk — it would
+				// become a stale activeEmail after restart.
+				this.data.activeEmail = selected.email;
+				this.notifyStateChanged();
+			} else {
+				this.setActiveAccount(selected.email);
+			}
 		}
 		return selected;
 	}
@@ -398,15 +435,21 @@ export class AccountManager {
 	}
 
 	private clearExpiredExhaustion(now: number): void {
-		let changed = false;
-		for (const account of this.data.accounts) {
+		let managedChanged = false;
+		let anyChanged = false;
+		for (const account of this.getAccounts()) {
 			if (account.quotaExhaustedUntil && account.quotaExhaustedUntil <= now) {
 				account.quotaExhaustedUntil = undefined;
-				changed = true;
+				anyChanged = true;
+				if (!this.isPiAuthAccount(account)) {
+					managedChanged = true;
+				}
 			}
 		}
-		if (changed) {
+		if (managedChanged) {
 			this.save();
+		}
+		if (anyChanged) {
 			this.notifyStateChanged();
 		}
 	}

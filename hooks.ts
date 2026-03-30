@@ -6,28 +6,33 @@ async function refreshAndActivateBestAccount(
 	accountManager: AccountManager,
 	warningHandler?: WarningHandler,
 ): Promise<void> {
-	await accountManager.loadPiAuth();
-	await accountManager.refreshUsageForAllAccounts({ force: true });
+	accountManager.beginInitialization();
+	try {
+		await accountManager.loadPiAuth();
+		await accountManager.refreshUsageForAllAccounts({ force: true });
 
-	const needsReauth = accountManager.getAccountsNeedingReauth();
-	if (needsReauth.length > 0) {
-		const hints = needsReauth.map((a) => {
-			const cmd = accountManager.isPiAuthAccount(a)
-				? "/login openai-codex"
-				: `/multicodex use ${a.email}`;
-			return `${a.email} (${cmd})`;
-		});
-		warningHandler?.(
-			`Multicodex: ${needsReauth.length} account(s) need re-authentication: ${hints.join(", ")}`,
-		);
-	}
+		const needsReauth = accountManager.getAccountsNeedingReauth();
+		if (needsReauth.length > 0) {
+			const hints = needsReauth.map((a) => {
+				const cmd = accountManager.isPiAuthAccount(a)
+					? "/login openai-codex"
+					: `/multicodex use ${a.email}`;
+				return `${a.email} (${cmd})`;
+			});
+			warningHandler?.(
+				`Multicodex: ${needsReauth.length} account(s) need re-authentication: ${hints.join(", ")}`,
+			);
+		}
 
-	const manual = accountManager.getAvailableManualAccount();
-	if (manual) return;
-	if (accountManager.hasManualAccount()) {
-		accountManager.clearManualAccount();
+		const manual = accountManager.getAvailableManualAccount();
+		if (manual) return;
+		if (accountManager.hasManualAccount()) {
+			accountManager.clearManualAccount();
+		}
+		await accountManager.activateBestAccount();
+	} finally {
+		accountManager.markReady();
 	}
-	await accountManager.activateBestAccount();
 }
 
 export function handleSessionStart(
@@ -35,12 +40,12 @@ export function handleSessionStart(
 	warningHandler?: WarningHandler,
 ): void {
 	if (accountManager.getAccounts().length === 0) return;
-	void refreshAndActivateBestAccount(accountManager, warningHandler);
+	refreshAndActivateBestAccount(accountManager, warningHandler).catch(() => {});
 }
 
 export function handleNewSessionSwitch(
 	accountManager: AccountManager,
 	warningHandler?: WarningHandler,
 ): void {
-	void refreshAndActivateBestAccount(accountManager, warningHandler);
+	refreshAndActivateBestAccount(accountManager, warningHandler).catch(() => {});
 }

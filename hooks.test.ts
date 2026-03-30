@@ -9,6 +9,8 @@ describe("handleSessionStart", () => {
 		const hasManualAccount = vi.fn();
 		const clearManualAccount = vi.fn();
 		const activateBestAccount = vi.fn();
+		const beginInitialization = vi.fn();
+		const markReady = vi.fn();
 
 		handleSessionStart({
 			getAccounts: () => [],
@@ -18,6 +20,8 @@ describe("handleSessionStart", () => {
 			hasManualAccount,
 			clearManualAccount,
 			activateBestAccount,
+			beginInitialization,
+			markReady,
 		} as never);
 
 		expect(loadPiAuth).not.toHaveBeenCalled();
@@ -35,6 +39,8 @@ describe("handleSessionStart", () => {
 		const hasManualAccount = vi.fn().mockReturnValue(false);
 		const clearManualAccount = vi.fn();
 		const activateBestAccount = vi.fn().mockResolvedValue(undefined);
+		const beginInitialization = vi.fn();
+		const markReady = vi.fn();
 
 		handleSessionStart({
 			getAccounts: () => [{ email: "a@example.com" }],
@@ -46,15 +52,19 @@ describe("handleSessionStart", () => {
 			hasManualAccount,
 			clearManualAccount,
 			activateBestAccount,
+			beginInitialization,
+			markReady,
 		} as never);
 
 		await vi.waitFor(() => {
+			expect(beginInitialization).toHaveBeenCalled();
 			expect(loadPiAuth).toHaveBeenCalled();
 			expect(refreshUsageForAllAccounts).toHaveBeenCalledWith({ force: true });
 			expect(getAvailableManualAccount).toHaveBeenCalled();
 			expect(hasManualAccount).toHaveBeenCalled();
 			expect(clearManualAccount).not.toHaveBeenCalled();
 			expect(activateBestAccount).toHaveBeenCalled();
+			expect(markReady).toHaveBeenCalled();
 		});
 	});
 
@@ -67,6 +77,8 @@ describe("handleSessionStart", () => {
 		const hasManualAccount = vi.fn();
 		const clearManualAccount = vi.fn();
 		const activateBestAccount = vi.fn();
+		const beginInitialization = vi.fn();
+		const markReady = vi.fn();
 
 		handleSessionStart({
 			getAccounts: () => [{ email: "manual@example.com" }],
@@ -78,15 +90,19 @@ describe("handleSessionStart", () => {
 			hasManualAccount,
 			clearManualAccount,
 			activateBestAccount,
+			beginInitialization,
+			markReady,
 		} as never);
 
 		await vi.waitFor(() => {
+			expect(beginInitialization).toHaveBeenCalled();
 			expect(loadPiAuth).toHaveBeenCalled();
 			expect(refreshUsageForAllAccounts).toHaveBeenCalledWith({ force: true });
 			expect(getAvailableManualAccount).toHaveBeenCalled();
 			expect(hasManualAccount).not.toHaveBeenCalled();
 			expect(clearManualAccount).not.toHaveBeenCalled();
 			expect(activateBestAccount).not.toHaveBeenCalled();
+			expect(markReady).toHaveBeenCalled();
 		});
 	});
 });
@@ -99,6 +115,8 @@ describe("handleNewSessionSwitch", () => {
 		const hasManualAccount = vi.fn().mockReturnValue(true);
 		const clearManualAccount = vi.fn();
 		const activateBestAccount = vi.fn().mockResolvedValue(undefined);
+		const beginInitialization = vi.fn();
+		const markReady = vi.fn();
 
 		handleNewSessionSwitch({
 			loadPiAuth,
@@ -109,15 +127,42 @@ describe("handleNewSessionSwitch", () => {
 			hasManualAccount,
 			clearManualAccount,
 			activateBestAccount,
+			beginInitialization,
+			markReady,
 		} as never);
 
 		await vi.waitFor(() => {
+			expect(beginInitialization).toHaveBeenCalled();
 			expect(loadPiAuth).toHaveBeenCalled();
 			expect(refreshUsageForAllAccounts).toHaveBeenCalledWith({ force: true });
 			expect(getAvailableManualAccount).toHaveBeenCalled();
 			expect(hasManualAccount).toHaveBeenCalled();
 			expect(clearManualAccount).toHaveBeenCalled();
 			expect(activateBestAccount).toHaveBeenCalled();
+			expect(markReady).toHaveBeenCalled();
+		});
+	});
+
+	it("marks ready even when the refresh throws", async () => {
+		const loadPiAuth = vi.fn().mockRejectedValue(new Error("network failure"));
+		const beginInitialization = vi.fn();
+		const markReady = vi.fn();
+
+		handleNewSessionSwitch({
+			loadPiAuth,
+			isPiAuthAccount: () => false,
+			refreshUsageForAllAccounts: vi.fn(),
+			getAccountsNeedingReauth: () => [],
+			getAvailableManualAccount: vi.fn(),
+			hasManualAccount: vi.fn(),
+			clearManualAccount: vi.fn(),
+			activateBestAccount: vi.fn(),
+			beginInitialization,
+			markReady,
+		} as never);
+
+		await vi.waitFor(() => {
+			expect(markReady).toHaveBeenCalled();
 		});
 	});
 });

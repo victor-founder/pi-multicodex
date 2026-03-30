@@ -39,6 +39,7 @@ export function createStreamWrapper(
 
 		(async () => {
 			try {
+				await accountManager.waitUntilReady();
 				const excludedEmails = new Set<string>();
 				for (let attempt = 0; attempt <= MAX_ROTATION_RETRIES; attempt++) {
 					const now = Date.now();

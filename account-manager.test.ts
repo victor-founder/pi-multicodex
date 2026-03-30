@@ -307,3 +307,127 @@ describe("AccountManager auth-failure warnings", () => {
 		expect(warningHandler.mock.calls[0]?.[0]).toContain("/login openai-codex");
 	});
 });
+
+describe("AccountManager pi auth exhaustion handling", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mocks.storageData.accounts = [];
+		mocks.storageData.activeEmail = undefined;
+		mocks.loadImportedOpenAICodexAuth.mockResolvedValue(undefined);
+	});
+
+	it("clears expired exhaustion on ephemeral pi auth account", async () => {
+		mocks.loadImportedOpenAICodexAuth.mockResolvedValue({
+			identifier: "pi@example.com",
+			fingerprint: "fp",
+			credentials: {
+				access: "pi-access",
+				refresh: "pi-refresh",
+				expires: Date.now() + 3600_000,
+			},
+		});
+
+		const manager = new AccountManager();
+		await manager.loadPiAuth();
+
+		const piAccount = manager.getAccount("pi@example.com");
+		expect(piAccount).toBeDefined();
+		if (!piAccount) return;
+
+		// Mark exhausted until 1s from now
+		manager.markExhausted("pi@example.com", Date.now() + 1000);
+		expect(piAccount.quotaExhaustedUntil).toBeGreaterThan(0);
+
+		// markExhausted should not persist for pi auth
+		expect(mocks.saveStorage).not.toHaveBeenCalled();
+	});
+
+	it("clearAllQuotaExhaustion clears pi auth account too", async () => {
+		mocks.storageData.accounts = [
+			{
+				email: "managed@example.com",
+				accessToken: "managed-access",
+				refreshToken: "managed-refresh",
+				expiresAt: Date.now() + 3600_000,
+				quotaExhaustedUntil: Date.now() + 60_000,
+			},
+		];
+		mocks.loadImportedOpenAICodexAuth.mockResolvedValue({
+			identifier: "pi@example.com",
+			fingerprint: "fp",
+			credentials: {
+				access: "pi-access",
+				refresh: "pi-refresh",
+				expires: Date.now() + 3600_000,
+			},
+		});
+
+		const manager = new AccountManager();
+		await manager.loadPiAuth();
+
+		// Exhaust the pi auth account
+		manager.markExhausted("pi@example.com", Date.now() + 60_000);
+
+		const cleared = manager.clearAllQuotaExhaustion();
+		expect(cleared).toBe(2);
+
+		// Both accounts should be clear
+		const piAccount = manager.getAccount("pi@example.com");
+		const managedAccount = manager.getAccount("managed@example.com");
+		expect(piAccount?.quotaExhaustedUntil).toBeUndefined();
+		expect(managedAccount?.quotaExhaustedUntil).toBeUndefined();
+	});
+});
+
+describe("AccountManager ready-gate", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mocks.storageData.accounts = [];
+		mocks.storageData.activeEmail = undefined;
+		mocks.loadImportedOpenAICodexAuth.mockResolvedValue(undefined);
+	});
+
+	it("resolves immediately when no initialization is in progress", async () => {
+		const manager = new AccountManager();
+		await manager.waitUntilReady();
+	});
+
+	it("blocks until markReady is called", async () => {
+		const manager = new AccountManager();
+		manager.beginInitialization();
+
+		let resolved = false;
+		const waiting = manager.waitUntilReady().then(() => {
+			resolved = true;
+		});
+
+		// Should not resolve yet
+		await Promise.resolve();
+		expect(resolved).toBe(false);
+
+		manager.markReady();
+		await waiting;
+		expect(resolved).toBe(true);
+	});
+
+	it("resolves after markReady even if beginInitialization is called again", async () => {
+		const manager = new AccountManager();
+		manager.beginInitialization();
+		manager.markReady();
+
+		// Second initialization cycle
+		manager.beginInitialization();
+
+		let resolved = false;
+		const waiting = manager.waitUntilReady().then(() => {
+			resolved = true;
+		});
+
+		await Promise.resolve();
+		expect(resolved).toBe(false);
+
+		manager.markReady();
+		await waiting;
+		expect(resolved).toBe(true);
+	});
+});

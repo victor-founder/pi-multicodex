@@ -66,6 +66,17 @@ export function getNextResetAt(usage?: CodexUsageSnapshot): number | undefined {
 	return Math.min(...candidates);
 }
 
+export function getMaxUsedPercent(
+	usage?: CodexUsageSnapshot,
+): number | undefined {
+	const candidates = [
+		usage?.primary?.usedPercent,
+		usage?.secondary?.usedPercent,
+	].filter((value): value is number => typeof value === "number");
+	if (candidates.length === 0) return undefined;
+	return Math.max(...candidates);
+}
+
 export function getWeeklyResetAt(
 	usage?: CodexUsageSnapshot,
 ): number | undefined {

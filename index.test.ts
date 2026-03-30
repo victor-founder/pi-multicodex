@@ -252,6 +252,60 @@ describe("pickBestAccount", () => {
 		const selected = pickBestAccount(accounts, usage, { now: 1000 });
 		expect(selected?.email).toBe("b");
 	});
+
+	it("prefers lower usage over earlier weekly reset", () => {
+		const accounts = [makeAccount("a"), makeAccount("b")];
+		const usage = new Map([
+			[
+				"a",
+				{
+					primary: { usedPercent: 90, resetAt: 5000 },
+					secondary: { usedPercent: 80, resetAt: 6000 },
+					fetchedAt: 0,
+				},
+			],
+			[
+				"b",
+				{
+					primary: { usedPercent: 5, resetAt: 5000 },
+					secondary: { usedPercent: 10, resetAt: 9000 },
+					fetchedAt: 0,
+				},
+			],
+		]);
+
+		// Account b has much lower usage (10%) even though its weekly
+		// reset is later (9000 vs 6000). Should pick b.
+		const selected = pickBestAccount(accounts, usage, { now: 0 });
+		expect(selected?.email).toBe("b");
+	});
+
+	it("uses weekly reset as tiebreaker when usage is equal", () => {
+		const accounts = [makeAccount("a"), makeAccount("b")];
+		const usage = new Map([
+			[
+				"a",
+				{
+					primary: { usedPercent: 30, resetAt: 5000 },
+					secondary: { usedPercent: 30, resetAt: 8000 },
+					fetchedAt: 0,
+				},
+			],
+			[
+				"b",
+				{
+					primary: { usedPercent: 30, resetAt: 5000 },
+					secondary: { usedPercent: 30, resetAt: 7000 },
+					fetchedAt: 0,
+				},
+			],
+		]);
+
+		// Same max usage (30%), so tiebreak on weekly reset.
+		// b resets at 7000 < a at 8000, so pick b.
+		const selected = pickBestAccount(accounts, usage, { now: 0 });
+		expect(selected?.email).toBe("b");
+	});
 });
 
 describe("manual account selection", () => {
@@ -261,6 +315,7 @@ describe("manual account selection", () => {
 		let headerEmail: string | undefined;
 
 		const accountManager = {
+			waitUntilReady: async () => {},
 			syncImportedOpenAICodexAuth: async () => false,
 			getAvailableManualAccount: () => manual,
 			hasManualAccount: () => true,
@@ -313,6 +368,7 @@ describe("manual account selection", () => {
 		let headerEmail: string | undefined;
 
 		const accountManager = {
+			waitUntilReady: async () => {},
 			syncImportedOpenAICodexAuth: async () => false,
 			getAvailableManualAccount: () => undefined,
 			hasManualAccount: () => true,
@@ -367,6 +423,7 @@ describe("manual account selection", () => {
 		let streamCalls = 0;
 
 		const accountManager = {
+			waitUntilReady: async () => {},
 			syncImportedOpenAICodexAuth: async () => false,
 			getAvailableManualAccount: () => (cleared ? undefined : manual),
 			hasManualAccount: () => !cleared,
@@ -431,6 +488,7 @@ describe("manual account selection", () => {
 
 		const notifyRotationSkipForAuthFailure = vi.fn();
 		const accountManager = {
+			waitUntilReady: async () => {},
 			syncImportedOpenAICodexAuth: async () => false,
 			getAvailableManualAccount: () => undefined,
 			hasManualAccount: () => false,

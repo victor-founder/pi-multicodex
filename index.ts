@@ -22,6 +22,7 @@ export { createStreamWrapper } from "./stream-wrapper";
 export type { CodexUsageSnapshot } from "./usage";
 export {
 	formatResetAt,
+	getMaxUsedPercent,
 	getNextResetAt,
 	getWeeklyResetAt,
 	isUsageUntouched,

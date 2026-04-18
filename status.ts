@@ -174,6 +174,22 @@ function formatPercent(
 	return `${Math.round(clampPercent(displayPercent))}% ${mode}`;
 }
 
+export function formatUsageSummaryText(
+	usage: CodexUsageSnapshot | undefined,
+	mode: PercentDisplayMode = "left",
+): string {
+	const primaryDisplay = usedToDisplayPercent(usage?.primary?.usedPercent, mode);
+	const secondaryDisplay = usedToDisplayPercent(
+		usage?.secondary?.usedPercent,
+		mode,
+	);
+	const primaryLabel =
+		primaryDisplay === undefined ? "unknown" : formatPercent(primaryDisplay, mode);
+	const secondaryLabel =
+		secondaryDisplay === undefined ? "unknown" : formatPercent(secondaryDisplay, mode);
+	return `5h ${primaryLabel} reset:${formatResetAt(usage?.primary?.resetAt)} | weekly ${secondaryLabel} reset:${formatResetAt(usage?.secondary?.resetAt)}`;
+}
+
 function formatResetCountdown(resetAt: number | undefined): string | undefined {
 	if (typeof resetAt !== "number" || Number.isNaN(resetAt)) return undefined;
 	const totalSeconds = Math.max(0, Math.round((resetAt - Date.now()) / 1000));

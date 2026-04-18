@@ -19,9 +19,14 @@ import { getAgentSettingsPath } from "pi-provider-utils/agent-paths";
 import { normalizeUnknownError } from "pi-provider-utils/streams";
 import type { AccountManager } from "./account-manager";
 import { openLoginInBrowser } from "./browser";
-import type { createUsageStatusController } from "./status";
+import {
+	formatUsageSummaryText,
+	loadFooterPreferences,
+	type PercentDisplayMode,
+	type createUsageStatusController,
+} from "./status";
 import { type Account, STORAGE_FILE } from "./storage";
-import { formatResetAt, isUsageUntouched } from "./usage";
+import { isUsageUntouched } from "./usage";
 
 const SETTINGS_FILE = getAgentSettingsPath();
 const NO_ACCOUNTS_MESSAGE =
@@ -116,28 +121,32 @@ function getAccountTags(
 function formatUsageSummary(
 	accountManager: AccountManager,
 	account: Account,
+	usageMode: PercentDisplayMode,
 ): string {
-	const usage = accountManager.getCachedUsage(account.email);
-	const primaryUsed = usage?.primary?.usedPercent;
-	const secondaryUsed = usage?.secondary?.usedPercent;
-	const primaryReset = usage?.primary?.resetAt;
-	const secondaryReset = usage?.secondary?.resetAt;
-	const primaryLabel =
-		primaryUsed === undefined ? "unknown" : `${Math.round(primaryUsed)}%`;
-	const secondaryLabel =
-		secondaryUsed === undefined ? "unknown" : `${Math.round(secondaryUsed)}%`;
-	return `5h ${primaryLabel} reset:${formatResetAt(primaryReset)} | weekly ${secondaryLabel} reset:${formatResetAt(secondaryReset)}`;
+	return formatUsageSummaryText(
+		accountManager.getCachedUsage(account.email),
+		usageMode,
+	);
 }
 
 function formatAccountStatusLine(
 	accountManager: AccountManager,
 	email: string,
+	usageMode: PercentDisplayMode,
 ): string {
 	const account = accountManager.getAccount(email);
 	if (!account) return email;
 	const tags = getAccountTags(accountManager, account).join(", ");
 	const suffix = tags ? ` (${tags})` : "";
-	return `${account.email}${suffix} - ${formatUsageSummary(accountManager, account)}`;
+	return `${account.email}${suffix} - ${formatUsageSummary(accountManager, account, usageMode)}`;
+}
+
+async function loadUsageMode(): Promise<PercentDisplayMode> {
+	try {
+		return (await loadFooterPreferences()).usageMode;
+	} catch {
+		return "left";
+	}
 }
 
 function getSubcommandCompletions(prefix: string): AutocompleteItem[] | null {
@@ -278,6 +287,7 @@ async function refreshSingleAccount(
 	ctx: ExtensionCommandContext,
 	accountManager: AccountManager,
 	email: string,
+	usageMode: PercentDisplayMode,
 ): Promise<void> {
 	const account = accountManager.getAccount(email);
 	if (!account) {
@@ -297,7 +307,7 @@ async function refreshSingleAccount(
 
 	await accountManager.refreshUsageForAccount(account, { force: true });
 	ctx.ui.notify(
-		`refreshed ${formatAccountStatusLine(accountManager, email)}`,
+		`refreshed ${formatAccountStatusLine(accountManager, email, usageMode)}`,
 		"info",
 	);
 }
@@ -344,6 +354,7 @@ async function promptForNewAccountIdentifier(
 async function openAccountManagementPanel(
 	ctx: ExtensionCommandContext,
 	accountManager: AccountManager,
+	usageMode: PercentDisplayMode,
 ): Promise<AccountPanelResult> {
 	const accounts = accountManager.getAccounts();
 
@@ -405,7 +416,7 @@ async function openAccountManagementPanel(
 					: "dim";
 			const secondary = theme.fg(
 				summaryColor,
-				formatUsageSummary(accountManager, account),
+				formatUsageSummary(accountManager, account, usageMode),
 			);
 			return [primary, truncateToWidth(`  ${secondary}`, width, "")];
 		}
@@ -585,6 +596,7 @@ async function openAccountManagementFlow(
 	accountManager: AccountManager,
 	statusController: ReturnType<typeof createUsageStatusController>,
 ): Promise<void> {
+	const usageMode = await loadUsageMode();
 	while (true) {
 		const accounts = accountManager.getAccounts();
 		if (accounts.length === 0) {
@@ -595,7 +607,7 @@ async function openAccountManagementFlow(
 			continue;
 		}
 
-		const result = await openAccountManagementPanel(ctx, accountManager);
+		const result = await openAccountManagementPanel(ctx, accountManager, usageMode);
 		if (!result) return;
 
 		if (result.action === "add") {
@@ -613,7 +625,7 @@ async function openAccountManagementFlow(
 		}
 
 		if (result.action === "refresh") {
-			await refreshSingleAccount(ctx, accountManager, result.email);
+			await refreshSingleAccount(ctx, accountManager, result.email, usageMode);
 			await statusController.refreshFor(ctx);
 			continue;
 		}
@@ -669,8 +681,9 @@ async function runAccountsSubcommand(
 	}
 
 	if (!ctx.hasUI) {
+		const usageMode = await loadUsageMode();
 		const lines = accounts.map((account) =>
-			formatAccountStatusLine(accountManager, account.email),
+			formatAccountStatusLine(accountManager, account.email, usageMode),
 		);
 		ctx.ui.notify(lines.join("\n"), "info");
 		return;
@@ -872,7 +885,12 @@ async function runRefreshSubcommand(
 		await openAccountManagementFlow(pi, ctx, accountManager, statusController);
 		return;
 	}
-	await refreshSingleAccount(ctx, accountManager, rest);
+	await refreshSingleAccount(
+		ctx,
+		accountManager,
+		rest,
+		await loadUsageMode(),
+	);
 	await statusController.refreshFor(ctx);
 }
 

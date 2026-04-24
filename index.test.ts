@@ -45,11 +45,18 @@ describe("getOpenAICodexMirror", () => {
 			models: sourceModels.map((m) => ({
 				id: m.id,
 				name: m.name,
+				api: m.api,
+				baseUrl: m.baseUrl,
 				reasoning: m.reasoning,
-				input: m.input,
-				cost: m.cost,
+				thinkingLevelMap: m.thinkingLevelMap
+					? { ...m.thinkingLevelMap }
+					: undefined,
+				input: [...m.input],
+				cost: { ...m.cost },
 				contextWindow: m.contextWindow,
 				maxTokens: m.maxTokens,
+				headers: m.headers ? { ...m.headers } : undefined,
+				compat: m.compat,
 			})),
 		};
 

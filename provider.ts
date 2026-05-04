@@ -1,43 +1,34 @@
-import { getApiProvider } from "@mariozechner/pi-ai";
-import { mirrorProvider } from "pi-provider-utils/providers";
+import { getApiProvider, getModels } from "@mariozechner/pi-ai";
+import type { ProviderModelConfig } from "@mariozechner/pi-coding-agent";
 import type { AccountManager } from "./account-manager";
 import { createStreamWrapper } from "./stream-wrapper";
 
 export const PROVIDER_ID = "openai-codex";
 
-export interface ProviderModelDef {
-	id: string;
-	name: string;
-	reasoning: boolean;
-	input: ("text" | "image")[];
-	cost: {
-		input: number;
-		output: number;
-		cacheRead: number;
-		cacheWrite: number;
-	};
-	contextWindow: number;
-	maxTokens: number;
-}
+export type ProviderModelDef = ProviderModelConfig;
 
 export function getOpenAICodexMirror(): {
 	baseUrl: string;
-	models: ProviderModelDef[];
+	models: ProviderModelConfig[];
 } {
-	const mirror = mirrorProvider("openai-codex");
-	if (!mirror) {
-		return { baseUrl: "https://chatgpt.com/backend-api", models: [] };
-	}
+	const sourceModels = getModels("openai-codex");
 	return {
-		baseUrl: mirror.baseUrl,
-		models: mirror.models.map((m) => ({
+		baseUrl: sourceModels[0]?.baseUrl ?? "https://chatgpt.com/backend-api",
+		models: sourceModels.map((m) => ({
 			id: m.id,
 			name: m.name,
+			api: m.api,
+			baseUrl: m.baseUrl,
 			reasoning: m.reasoning,
+			thinkingLevelMap: m.thinkingLevelMap
+				? { ...m.thinkingLevelMap }
+				: undefined,
 			input: [...m.input],
 			cost: { ...m.cost },
 			contextWindow: m.contextWindow,
 			maxTokens: m.maxTokens,
+			headers: m.headers ? { ...m.headers } : undefined,
+			compat: m.compat,
 		})),
 	};
 }

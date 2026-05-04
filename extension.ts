@@ -1,6 +1,7 @@
 import type {
 	ExtensionAPI,
 	ExtensionContext,
+	SessionStartEvent,
 } from "@mariozechner/pi-coding-agent";
 import { AccountManager } from "./account-manager";
 import { registerCommands } from "./commands";
@@ -26,30 +27,24 @@ export default function multicodexExtension(pi: ExtensionAPI) {
 
 	registerCommands(pi, accountManager, statusController);
 
-	pi.on("session_start", (_event: unknown, ctx: ExtensionContext) => {
+	pi.on("session_start", (event: SessionStartEvent, ctx: ExtensionContext) => {
 		lastContext = ctx;
 		accountManager.resetSessionWarnings();
-		handleSessionStart(accountManager, (msg) => ctx.ui.notify(msg, "warning"));
+		if (event.reason === "new") {
+			handleNewSessionSwitch(accountManager, (msg) =>
+				ctx.ui.notify(msg, "warning"),
+			);
+		} else {
+			handleSessionStart(accountManager, (msg) =>
+				ctx.ui.notify(msg, "warning"),
+			);
+		}
 		statusController.startAutoRefresh();
 		void (async () => {
 			await statusController.loadPreferences(ctx);
 			await statusController.refreshFor(ctx);
 		})();
 	});
-
-	pi.on(
-		"session_switch",
-		(event: { reason?: string }, ctx: ExtensionContext) => {
-			lastContext = ctx;
-			if (event.reason === "new") {
-				accountManager.resetSessionWarnings();
-				handleNewSessionSwitch(accountManager, (msg) =>
-					ctx.ui.notify(msg, "warning"),
-				);
-			}
-			void statusController.refreshFor(ctx);
-		},
-	);
 
 	pi.on("turn_end", (_event: unknown, ctx: ExtensionContext) => {
 		lastContext = ctx;
